@@ -1,20 +1,37 @@
-import { Home, PlusCircle, Clock3, Stethoscope } from 'lucide-react'
+import {
+  Home,
+  PlusCircle,
+  Clock3,
+  Stethoscope,
+  NotebookPen,
+} from 'lucide-react'
 
 const TABS = [
   { id: 'home', label: '홈', Icon: Home },
   { id: 'quickLog', label: '기록', Icon: PlusCircle },
   { id: 'history', label: '타임라인', Icon: Clock3 },
   { id: 'medical', label: '메디컬', Icon: Stethoscope },
+  { id: 'diary', label: '일기', Icon: NotebookPen },
 ]
 
-function BottomNav({ activeTab, onChange }) {
+function BottomNav({ activeTab, onChange, visibleTabs }) {
+  const tabs = visibleTabs
+    ? TABS.filter((tab) => visibleTabs.includes(tab.id))
+    : TABS
+
+  // 탭이 하나뿐이면(자녀 계정) 내비게이션을 숨긴다
+  if (tabs.length <= 1) return null
+
   return (
     <nav
       className="safe-bottom sticky bottom-0 z-30 border-t border-[#E8E2D9] bg-[#FDFBF7]/95 backdrop-blur-sm"
       aria-label="하단 내비게이션"
     >
-      <ul className="grid grid-cols-4 px-1 pt-1 pb-1">
-        {TABS.map(({ id, label, Icon }) => {
+      <ul
+        className="grid px-1 pt-1 pb-1"
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
+      >
+        {tabs.map(({ id, label, Icon }) => {
           const isActive = activeTab === id
 
           return (

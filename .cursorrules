@@ -44,6 +44,24 @@ CREATE TABLE care_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 3-0. 프로필 (로그인 계정 1:1, 부모/자녀 역할 구분 — supabase/setup_auth_and_diary.sql 참조)
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    display_name VARCHAR(50) NOT NULL DEFAULT '',
+    role VARCHAR(10) NOT NULL DEFAULT 'pending' CHECK (role IN ('parent', 'child', 'pending')), -- pending은 권한 없음(신규 가입 방어)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3-1. 육아 일기 테이블 (작성자만 조회 가능, 자녀 계정은 전체 읽기 — RLS로 강제)
+CREATE TABLE diaries (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    author_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+    diary_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    content TEXT NOT NULL,
+    photo_paths TEXT[] NOT NULL DEFAULT '{}', -- Storage 'diary-photos' 버킷 경로
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 3. 소아과 병원 및 진료 기록 테이블
 CREATE TABLE medical_logs (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
