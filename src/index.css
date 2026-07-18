@@ -1,0 +1,63 @@
+@import 'tailwindcss';
+
+:root {
+  --color-beige: #fdfbf7;
+  --color-soft-green: #e6f4ea;
+  --color-leaf: #3d8b5a;
+  --color-leaf-deep: #2f6b45;
+  --color-border: #e8e2d9;
+  --color-ink: #292524;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    'Pretendard',
+    'Apple SD Gothic Neo',
+    'Noto Sans KR',
+    system-ui,
+    sans-serif;
+  color: var(--color-ink);
+  background: #efe9df;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+}
+
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+}
+
+/* Wheel picker — 스크롤바 숨김 */
+.wheel-column {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.wheel-column::-webkit-scrollbar {
+  display: none;
+}
+

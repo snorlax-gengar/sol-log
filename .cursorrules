@@ -1,0 +1,113 @@
+# 프로젝트 프로필 (Project Profile)
+- **서비스명:** 솔로그 (Sol-Log) - 우리 아이 '노이솔'을 위한 원터치 실시간 육아 로그 앱
+- **목적:** 육아(수유, 기저귀, 병원) 기록 및 패턴 분석 모바일 전용 웹 서비스
+- **타겟 디바이스:** 모바일 전용 (iPhone 14/15/16 기준 390x844 해상도 최적화, Mobile-First)
+- **기술 스택:** React.js, JavaScript, Tailwind CSS, Lucide React (아이콘), Recharts (차트), Supabase (DB & Authentication)
+- **디자인 컨셉:** 웜 베이지 베이스(`#FDFBF7`)와 소프트 솔잎 그린(`#E6F4EA`) 계열의 따뜻하고 맑은 파스텔톤 컬러 시스템
+
+---
+
+# 1. DB 스키마 설계 (Supabase DDL)
+*아래 SQL 구조를 기반으로 데이터 모델링 및 쿼리를 작성해줘.*
+
+```sql
+-- 1. 아이 정보 테이블
+CREATE TABLE children (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    name VARCHAR(50) NOT NULL,
+    birth_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. 수유 및 기저귀 통합 기록 테이블 (동시 기록 UX 반영)
+CREATE TABLE care_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    child_id UUID REFERENCES children(id) ON DELETE CASCADE,
+    logged_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- 수유/기저귀 실제 수행 시점 (과거 시간 보정 가능)
+    
+    -- 수유 관련 데이터
+    feeding_type VARCHAR(20), -- 'breast'(모유), 'formula'(분유), 'pumped'(유축모유), 'food'(이유식), 'none'
+    feeding_amount_ml INT DEFAULT 0, -- 분유/유축/이유식 용량
+    breast_left_minutes INT DEFAULT 0, -- 모유 왼쪽 수유 시간
+    breast_right_minutes INT DEFAULT 0, -- 모유 오른쪽 수유 시간
+    feeding_notes TEXT,
+    
+    -- 기저귀 관련 데이터
+    diaper_status VARCHAR(20), -- 'pee'(소변), 'poop'(대변), 'both'(둘다), 'clean'(깨끗함), 'none'
+    diaper_poop_color VARCHAR(20), -- 대변 색상 ('yellow', 'green', 'brown', 'etc')
+    diaper_poop_texture VARCHAR(20), -- 대변 상태 ('normal', 'loose', 'hard')
+    diaper_notes TEXT,
+    
+    -- 공통 특이사항
+    general_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. 소아과 병원 및 진료 기록 테이블
+CREATE TABLE medical_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    child_id UUID REFERENCES children(id) ON DELETE CASCADE,
+    visit_date TIMESTAMP WITH TIME ZONE NOT NULL, -- 진료/예약 일시
+    hospital_name VARCHAR(100),
+    doctor_name VARCHAR(50),
+    symptoms TEXT, -- 증상
+    diagnosis TEXT, -- 진료 내용 및 처방
+    baby_weight_kg NUMERIC(4,2), -- 몸무게 (성장 지표용)
+    baby_height_cm NUMERIC(5,1), -- 키 (성장 지표용)
+    is_upcoming BOOLEAN DEFAULT false, -- 예약 일정 여부 (D-Day 표시용)
+    medicine_checked BOOLEAN DEFAULT false, -- 투약 완료 여부
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+---
+
+# 2. 핵심 UI/UX 및 비즈니스 룰
+
+### [공통 UX 규칙]
+- **한 손 조작 최적화:** 안거나 젖병을 든 채 조작하므로 키보드 타이핑을 최소화한다. 숫자 입력 대신 퀵 버튼(+10ml, +50ml)이나 라디오 버튼, 컬러 칩 탭 형태를 최우선으로 사용한다. 터치 영역은 최소 48x48px 이상 확보한다.
+- **시간 보정 (Back-dating):** 기록을 나중에 하는 경우가 많으므로, 등록 폼 상단에 [방금 전], [30분 전], [1시간 전] 또는 시간 선택 스크롤러를 두어 `logged_at` 시간을 쉽게 과거로 수정할 수 있게 한다.
+- **실시간 부부 동기화:** 공동 육아를 위해 Supabase Realtime 서비스(`supabase.channel()`)를 활성화하여, 한쪽에서 등록/수정/삭제 시 새로고침 없이 타임라인과 대시보드가 실시간 업데이트되어야 한다.
+
+### [화면별 세부 요구사항]
+1. **탭 1: 대시보드 & 패턴 분석 (Home)**
+   - **상단 요약:** 오늘 총 수유량(ml), 모유 총 시간(분), 기저귀 횟수(소변/대변 각각)를 직관적인 카드로 노출.
+   - **경과 시간 타이머:** "마지막 수유로부터 3시간 15분 경과" 같은 실시간 타이머 UI 제공.
+   - **통계 차트 (Recharts):** 최근 7일간의 시간대별(X축: 시간, Y축: 빈도) 수유 패턴 및 몸무게 변화 트렌드 선 그래프 구현.
+
+2. **탭 2: 원터치 기록하기 (Quick Log)**
+   - **통합 입력 폼:** 한 번의 방문으로 수유와 기저귀를 동시에 처리하므로, 수유 입력과 기저귀 선택 영역이 한 화면에 있고 [저장] 버튼 하나로 `care_logs`에 1건으로 insert되게 설계.
+   - **수유 섹션 토글 룰:** 
+     - '모유' 선택 시 -> 좌/우 수유 시간(분) 입력 폼 활성화.
+     - '분유/유축/이유식' 선택 시 -> ml 단위 선택 퀵 버튼(+10, +50, 추천 용량 세팅) 활성화.
+   - **기저귀 섹션 룰:** 대변('poop', 'both') 선택 시에만 대변 색상(황색/녹색 등) 및 상태(정상/묽음 등) 칩 선택창이 확장(Collapse) 애니메이션과 함께 노출됨.
+
+3. **탭 3: 역순 타임라인 (History)**
+   - 최신 기록이 맨 위로 오는 피드 형태. 수정/삭제 기능 필수.
+   - 수유와 기저귀가 동시에 기록된 건은 하나의 카드 내에서 깔끔하게 분리되어 가독성 있게 매핑되어야 함.
+
+4. **탭 4: 소아과/메디컬 관리 (Medical)**
+   - 상단 탭으로 [진료 기록]과 [예약/접종 일정] 분리.
+   - 예약 일정은 현재 시간 기준 D-Day 계산기 적용. 
+   - 병원에서 잰 키와 몸무게 입력란을 명확히 제공하여 대시보드 성장 그래프와 연동.
+
+---
+
+# 3. 개발 컴포넌트 아키텍처 및 구현 가이드
+- **Supabase 인스턴스:** 모든 Supabase 연동 로직은 `@/lib/supabaseClient.js`에 싱글톤으로 격리하여 관리할 것.
+- **상태 관리:** 부모 컴포넌트에서 비즈니스 로직을 다루거나 Custom Hook(`useCareLogs`, `useMedicalLogs`)으로 추출하고, UI 컴포넌트는 Props를 받아 렌더링하는 Pure Component 형태로 깔끔하게 분리할 것.
+- **스타일 가이드:** Tailwind CSS를 사용하며, 컴포넌트가 깔끔하고 따뜻한 느낌을 주도록 지정된 파스텔톤 컬러 시스템을 활용할 것.
+
+---
+
+# 4. 개발 프로세스 단계별 요청 사항
+*우리는 한 단계씩 완벽히 빌드하며 나아갈 것이다. 내가 다음 단계를 지시하기 전까지 해당 단계에만 집중해줘.*
+
+- **Step 1:** `@/lib/supabaseClient.js` 설정 및 하단 내비게이션 바(4개 탭) 뼈대 레이아웃 구축
+- **Step 2:** [탭 2: Quick Log] 화면의 수유/기저귀 통합 입력 폼 및 시간 보정 UX 구현 (Supabase Insert 연동)
+- **Step 3:** [탭 3: History] 실시간 구독(Realtime) 기능이 포함된 역순 타임라인 피드 및 수정/삭제 구현
+- **Step 4:** [탭 1: Home] 당일 요약 카드, 타이머 및 Recharts 기반 7일간의 패턴 분석 차트 구현
+- **Step 5:** [탭 4: Medical] 소아과 일정 D-Day 관리 및 성장 지표(몸무게/키) 입력 폼 구현
+
+**준비가 완료되었다면 "Step 1부터 시작하겠습니다."라고 답변하고 코드 작성을 시작해줘.**
