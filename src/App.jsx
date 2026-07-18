@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/ui/ToastProvider'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { ChildProvider } from '@/context/ChildContext'
 import { CareLogsProvider } from '@/context/CareLogsContext'
+import { MedicalLogsProvider } from '@/context/MedicalLogsContext'
 import { FeedingAlarmProvider } from '@/context/FeedingAlarmContext'
 import Login from '@/pages/Login'
 import Home from '@/pages/Home'
@@ -95,7 +96,9 @@ function AuthedApp() {
   return (
     <ChildProvider>
       <CareLogsProvider>
-        <FeedingAlarmProvider>{shell}</FeedingAlarmProvider>
+        <MedicalLogsProvider>
+          <FeedingAlarmProvider>{shell}</FeedingAlarmProvider>
+        </MedicalLogsProvider>
       </CareLogsProvider>
     </ChildProvider>
   )

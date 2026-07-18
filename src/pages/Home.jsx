@@ -2,8 +2,8 @@ import SummaryCards from '@/components/home/SummaryCards'
 import FeedingTimer from '@/components/home/FeedingTimer'
 import NextFeedingCard from '@/components/home/NextFeedingCard'
 import PatternCharts from '@/components/home/PatternCharts'
-import { useMedicalLogs } from '@/hooks/useMedicalLogs'
 import { useCareLogsContext } from '@/context/CareLogsContext'
+import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
 import { useFeedingAlarmContext } from '@/context/FeedingAlarmContext'
 import {
   formatMinutesDuration,
@@ -18,7 +18,7 @@ import {
 
 function Home() {
   const { logs, isLoading, error } = useCareLogsContext()
-  const { logs: medicalLogs } = useMedicalLogs({ enableRealtime: true })
+  const { logs: medicalLogs } = useMedicalLogsContext()
   const alarm = useFeedingAlarmContext()
 
   const summary = getTodaySummary(logs)

@@ -53,6 +53,19 @@ export function useMedicalLogs({ enableRealtime = false } = {}) {
     fetchMedicalLogs()
   }, [fetchMedicalLogs])
 
+  // 포그라운드 복귀 시 놓친 변경을 다시 불러온다 (useCareLogs와 동일)
+  useEffect(() => {
+    const refetchIfVisible = () => {
+      if (document.visibilityState === 'visible') fetchMedicalLogs()
+    }
+    document.addEventListener('visibilitychange', refetchIfVisible)
+    window.addEventListener('focus', refetchIfVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', refetchIfVisible)
+      window.removeEventListener('focus', refetchIfVisible)
+    }
+  }, [fetchMedicalLogs])
+
   useEffect(() => {
     if (!enableRealtime) return undefined
 

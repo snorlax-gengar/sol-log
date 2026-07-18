@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import MedicalForm from '@/components/medical/MedicalForm'
 import MedicalCard from '@/components/medical/MedicalCard'
 import ChipButton from '@/components/quickLog/ChipButton'
-import { useMedicalLogs } from '@/hooks/useMedicalLogs'
+import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
 
 function Medical() {
   const [tab, setTab] = useState('records')
@@ -14,7 +14,7 @@ function Medical() {
     insertMedicalLog,
     updateMedicalLog,
     deleteMedicalLog,
-  } = useMedicalLogs({ enableRealtime: true })
+  } = useMedicalLogsContext()
 
   const filteredLogs = useMemo(() => {
     const isUpcomingTab = tab === 'upcoming'
