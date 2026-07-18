@@ -137,6 +137,69 @@ export function useDiaries({ userId } = {}) {
     [userId],
   )
 
+  const updateDiary = useCallback(
+    async ({ diary, content, diaryDate, keptPaths = [], newFiles = [] }) => {
+      setIsSaving(true)
+      setError(null)
+      const uploadedPaths = []
+
+      try {
+        if (!userId) throw new Error('로그인이 필요합니다.')
+
+        // 새 사진 업로드
+        for (let i = 0; i < newFiles.length; i += 1) {
+          const file = newFiles[i]
+          const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+          const path = `${userId}/${Date.now()}-${i}.${ext}`
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET)
+            .upload(path, file, { contentType: file.type || 'image/jpeg' })
+          if (uploadError) throw uploadError
+          uploadedPaths.push(path)
+        }
+
+        const nextPaths = [...keptPaths, ...uploadedPaths]
+
+        const { data, error: updateError } = await supabase
+          .from('diaries')
+          .update({
+            content,
+            ...(diaryDate ? { diary_date: diaryDate } : {}),
+            photo_paths: nextPaths,
+          })
+          .eq('id', diary.id)
+          .select()
+          .single()
+
+        if (updateError) throw updateError
+
+        // 제거된 사진은 Storage에서 삭제 (실패해도 본문 저장은 유지)
+        const removed = (diary.photo_paths || []).filter(
+          (path) => !keptPaths.includes(path),
+        )
+        if (removed.length > 0) {
+          await supabase.storage.from(BUCKET).remove(removed)
+        }
+
+        const [withUrls] = await withPhotoUrls([data])
+        setDiaries((prev) =>
+          sortDiaries(prev.map((item) => (item.id === diary.id ? withUrls : item))),
+        )
+        return { data, error: null }
+      } catch (err) {
+        if (uploadedPaths.length > 0) {
+          supabase.storage.from(BUCKET).remove(uploadedPaths)
+        }
+        const message = err?.message || '일기 수정에 실패했습니다.'
+        setError(message)
+        return { data: null, error: message }
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [userId],
+  )
+
   const deleteDiary = useCallback(async (diary) => {
     setIsSaving(true)
     setError(null)
@@ -172,6 +235,7 @@ export function useDiaries({ userId } = {}) {
     error,
     fetchDiaries,
     insertDiary,
+    updateDiary,
     deleteDiary,
   }
 }

@@ -92,6 +92,21 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const changePassword = useCallback(async (newPassword) => {
+    try {
+      if (!newPassword || newPassword.length < 8) {
+        return { error: '비밀번호는 8자 이상으로 설정해주세요.' }
+      }
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+      if (error) return { error: error.message }
+      return { error: null }
+    } catch (err) {
+      return { error: err?.message || '비밀번호 변경에 실패했습니다.' }
+    }
+  }, [])
+
   const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut()
@@ -110,8 +125,9 @@ export function AuthProvider({ children }) {
       isLoading,
       signIn,
       signOut,
+      changePassword,
     }),
-    [session, profile, isLoading, signIn, signOut],
+    [session, profile, isLoading, signIn, signOut, changePassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

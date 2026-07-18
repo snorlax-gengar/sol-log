@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import DiaryComposer from '@/components/diary/DiaryComposer'
 import DiaryCard from '@/components/diary/DiaryCard'
+import DiaryEditModal from '@/components/diary/DiaryEditModal'
 import { useDiaries } from '@/hooks/useDiaries'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/ToastProvider'
@@ -7,9 +9,18 @@ import { useToast } from '@/components/ui/ToastProvider'
 function Diary() {
   const { user, role } = useAuth()
   const isChild = role === 'child'
-  const { diaries, authorNames, isLoading, isSaving, error, insertDiary, deleteDiary } =
-    useDiaries({ userId: user?.id })
+  const {
+    diaries,
+    authorNames,
+    isLoading,
+    isSaving,
+    error,
+    insertDiary,
+    updateDiary,
+    deleteDiary,
+  } = useDiaries({ userId: user?.id })
   const { showToast } = useToast()
+  const [editingDiary, setEditingDiary] = useState(null)
 
   const handleSubmit = async (payload) => {
     const result = await insertDiary(payload)
@@ -17,6 +28,17 @@ function Diary() {
       showToast(`저장 실패: ${result.error}`, 'error')
     } else {
       showToast('일기가 저장되었습니다.')
+    }
+    return result
+  }
+
+  const handleSaveEdit = async (payload) => {
+    const result = await updateDiary(payload)
+    if (result.error) {
+      showToast(`수정 실패: ${result.error}`, 'error')
+    } else {
+      setEditingDiary(null)
+      showToast('일기가 수정되었습니다.')
     }
     return result
   }
@@ -69,13 +91,23 @@ function Diary() {
               <DiaryCard
                 diary={diary}
                 authorName={isChild ? authorNames[diary.author_id] : null}
-                canDelete={!isChild && diary.author_id === user?.id}
+                canEdit={!isChild && diary.author_id === user?.id}
                 isBusy={isSaving}
+                onEdit={setEditingDiary}
                 onDelete={handleDelete}
               />
             </li>
           ))}
         </ul>
+      )}
+
+      {editingDiary && (
+        <DiaryEditModal
+          diary={editingDiary}
+          isSaving={isSaving}
+          onClose={() => setEditingDiary(null)}
+          onSave={handleSaveEdit}
+        />
       )}
     </section>
   )
