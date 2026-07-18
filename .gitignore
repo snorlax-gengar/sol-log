@@ -18,6 +18,11 @@ dist-ssr
 .claude/settings.local.json
 CLAUDE.local.md
 
+# 개인 데이터 시드 (일기 내용, 수유/진료 실데이터 - 공개 레포 금지)
+supabase/seed*.sql
+supabase/*seed*.sql
+supabase/personal/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -85,7 +85,7 @@ export function useDiaries({ userId } = {}) {
   }, [fetchDiaries])
 
   const insertDiary = useCallback(
-    async ({ content, files = [] }) => {
+    async ({ content, diaryDate, files = [] }) => {
       setIsSaving(true)
       setError(null)
       const uploadedPaths = []
@@ -111,6 +111,7 @@ export function useDiaries({ userId } = {}) {
           .insert({
             author_id: userId,
             content,
+            ...(diaryDate ? { diary_date: diaryDate } : {}),
             photo_paths: uploadedPaths,
           })
           .select()
