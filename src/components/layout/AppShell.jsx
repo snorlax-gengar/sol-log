@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { LogOut } from 'lucide-react'
+import { LogOut, RotateCw } from 'lucide-react'
 import BottomNav from '@/components/layout/BottomNav'
 import Logo from '@/components/ui/Logo'
+
+// vite.config.js의 define으로 주입되는 빌드 시각 (dev 서버에서는 'dev')
+const APP_VERSION =
+  typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
 
 function AppShell({
   activeTab,
@@ -27,6 +31,9 @@ function AppShell({
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium tracking-wide text-[#3D8B5A]">
                 SOL-LOG
+                <span className="ml-1.5 text-[9px] font-normal text-stone-400">
+                  v{APP_VERSION}
+                </span>
               </p>
               <h1 className="mt-0.5 text-lg font-semibold text-stone-800">
                 노이솔의 하루
@@ -38,6 +45,15 @@ function AppShell({
                   {userLabel}
                 </span>
               )}
+              <button
+                type="button"
+                aria-label="앱 새로고침"
+                title={`새 버전 확인 (현재 v${APP_VERSION})`}
+                onClick={() => window.location.reload()}
+                className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl text-stone-400 transition-colors hover:bg-[#E6F4EA] hover:text-[#2F6B45]"
+              >
+                <RotateCw size={16} />
+              </button>
               {onSignOut && (
                 <button
                   type="button"
