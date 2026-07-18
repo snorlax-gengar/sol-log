@@ -24,6 +24,7 @@ body,
 
 body {
   font-family:
+    'NanumSquareRound',
     'Pretendard',
     'Apple SD Gothic Neo',
     'Noto Sans KR',
@@ -41,6 +42,15 @@ body {
     font: inherit;
     cursor: pointer;
   }
+}
+
+/*
+ * NanumSquareRound 실제 웨이트: 300(L) / 400(R) / 700(B) / 800(EB)
+ * 기본 매핑으로는 semibold(600)와 bold(700)가 둘 다 700으로 떨어져 구분이 사라진다.
+ * bold를 800(ExtraBold)으로 올려 굵기 위계 확보: normal 400 < semibold 700 < bold 800
+ */
+.font-bold {
+  font-weight: 800;
 }
 
 .safe-top {
