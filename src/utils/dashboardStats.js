@@ -95,6 +95,31 @@ export function getTodayAverageFeedingIntervalMinutes(logs) {
 }
 
 /**
+ * 최근 수유 텀 평균(분): 최근 7일 내 수유 중 마지막 maxSamples+1건의 간격 평균.
+ * 수유가 2건 미만이면 null. (알람의 다음 수유 예상에 사용)
+ */
+export function getRecentAverageFeedingIntervalMinutes(
+  logs,
+  { maxSamples = 6, maxAgeDays = 7 } = {},
+) {
+  const since = Date.now() - maxAgeDays * 86400000
+  const feedings = logs
+    .filter(hasFeeding)
+    .map((log) => new Date(log.logged_at))
+    .filter((date) => date.getTime() >= since)
+    .sort((a, b) => a - b)
+
+  if (feedings.length < 2) return null
+
+  const recent = feedings.slice(-(maxSamples + 1))
+  let totalMs = 0
+  for (let i = 1; i < recent.length; i += 1) {
+    totalMs += recent[i] - recent[i - 1]
+  }
+  return totalMs / (recent.length - 1) / 60000
+}
+
+/**
  * History 타임라인용: 수유 기록 id -> 직전(더 오래된) 수유로부터의 간격(분).
  * 직전 수유가 없으면 맵에 포함되지 않는다.
  */

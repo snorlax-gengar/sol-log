@@ -1,8 +1,10 @@
 import SummaryCards from '@/components/home/SummaryCards'
 import FeedingTimer from '@/components/home/FeedingTimer'
+import NextFeedingCard from '@/components/home/NextFeedingCard'
 import PatternCharts from '@/components/home/PatternCharts'
 import { useCareLogs } from '@/hooks/useCareLogs'
 import { useMedicalLogs } from '@/hooks/useMedicalLogs'
+import { useFeedingAlarmContext } from '@/context/FeedingAlarmContext'
 import {
   formatMinutesDuration,
   getFeedingHourlyPattern,
@@ -15,6 +17,7 @@ import {
 function Home() {
   const { logs, isLoading, error } = useCareLogs({ enableRealtime: true })
   const { logs: medicalLogs } = useMedicalLogs({ enableRealtime: true })
+  const alarm = useFeedingAlarmContext()
 
   const summary = getTodaySummary(logs)
   const lastFeedingAt = getLastFeedingAt(logs)
@@ -46,6 +49,7 @@ function Home() {
       ) : (
         <>
           <FeedingTimer lastFeedingAt={lastFeedingAt} />
+          <NextFeedingCard alarm={alarm} />
           <SummaryCards
             summary={summary}
             averageIntervalLabel={averageIntervalLabel}
