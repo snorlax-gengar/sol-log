@@ -8,6 +8,9 @@ function sortByVisitDateDesc(logs) {
   )
 }
 
+// useCareLogs와 동일: 채널 이름 재사용 크래시 방지용 시퀀스
+let channelSeq = 0
+
 export function useMedicalLogs({ enableRealtime = false } = {}) {
   const [logs, setLogs] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -56,8 +59,9 @@ export function useMedicalLogs({ enableRealtime = false } = {}) {
     const childId = getDefaultChildId()
     if (!childId) return undefined
 
+    channelSeq += 1
     const channel = supabase
-      .channel(`medical_logs:${childId}`)
+      .channel(`medical_logs:${childId}:${channelSeq}`)
       .on(
         'postgres_changes',
         {

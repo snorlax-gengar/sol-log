@@ -23,6 +23,15 @@ create table if not exists public.profiles (
   created_at timestamp with time zone default now()
 );
 
+-- 역할 판별 헬퍼 (아래 모든 RLS 정책에서 사용하므로 정책보다 먼저 정의)
+create or replace function public.is_parent()
+returns boolean language sql stable security definer set search_path = public
+as $$ select exists (select 1 from profiles where id = auth.uid() and role = 'parent') $$;
+
+create or replace function public.is_child()
+returns boolean language sql stable security definer set search_path = public
+as $$ select exists (select 1 from profiles where id = auth.uid() and role = 'child') $$;
+
 alter table public.profiles enable row level security;
 
 -- 본인 프로필 + (가족 구성원이면) 다른 프로필 조회 가능. pending 계정은 본인 것만.
@@ -58,15 +67,6 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
-
--- 역할 판별 헬퍼 (RLS에서 사용)
-create or replace function public.is_parent()
-returns boolean language sql stable security definer set search_path = public
-as $$ select exists (select 1 from profiles where id = auth.uid() and role = 'parent') $$;
-
-create or replace function public.is_child()
-returns boolean language sql stable security definer set search_path = public
-as $$ select exists (select 1 from profiles where id = auth.uid() and role = 'child') $$;
 
 -- ---------- 2) 일기 테이블 ----------
 create table if not exists public.diaries (

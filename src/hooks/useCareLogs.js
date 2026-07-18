@@ -3,6 +3,10 @@ import { supabase } from '@/lib/supabaseClient'
 import { getDefaultChildId, requireChildId } from '@/lib/childId'
 import { formToDbPayload } from '@/utils/careLogFormat'
 
+// 같은 이름의 채널은 인스턴스가 재사용되므로(이미 subscribe된 채널에 .on()을
+// 걸면 크래시), 훅 인스턴스마다 고유한 채널 이름을 쓴다.
+let channelSeq = 0
+
 function sortByLoggedAtDesc(logs) {
   return [...logs].sort(
     (a, b) => new Date(b.logged_at) - new Date(a.logged_at),
@@ -57,8 +61,9 @@ export function useCareLogs({ enableRealtime = false } = {}) {
     const childId = getDefaultChildId()
     if (!childId) return undefined
 
+    channelSeq += 1
     const channel = supabase
-      .channel(`care_logs:${childId}`)
+      .channel(`care_logs:${childId}:${channelSeq}`)
       .on(
         'postgres_changes',
         {

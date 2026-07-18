@@ -48,13 +48,20 @@ export function AuthProvider({ children }) {
 
     let cancelled = false
     ;(async () => {
-      const { data } = await supabase
+      const { data, status } = await supabase
         .from('profiles')
         .select('id, display_name, role')
         .eq('id', userId)
         .single()
 
       if (cancelled) return
+
+      // 삭제된 계정의 잔여 세션 등 죽은 토큰(401) -> 세션 정리 후 로그인 화면으로
+      if (status === 401) {
+        await supabase.auth.signOut()
+        return
+      }
+
       setProfile(
         data ?? { id: userId, display_name: '', role: 'parent' },
       )
