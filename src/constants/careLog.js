@@ -7,11 +7,11 @@ export const FEEDING_TYPES = [
 ]
 
 export const DIAPER_STATUSES = [
-  { value: 'none', label: '없음' },
-  { value: 'pee', label: '소변' },
-  { value: 'poop', label: '대변' },
-  { value: 'both', label: '둘 다' },
-  { value: 'clean', label: '깨끗' },
+  { value: 'none', label: '없음', emoji: null },
+  { value: 'pee', label: '소변', emoji: '💧' },
+  { value: 'poop', label: '대변', emoji: '💩' },
+  { value: 'both', label: '둘 다', emoji: '💧💩' },
+  { value: 'clean', label: '깨끗', emoji: '✨' },
 ]
 
 export const POOP_COLORS = [
@@ -27,8 +27,6 @@ export const POOP_TEXTURES = [
   { value: 'hard', label: '딱딱' },
 ]
 
-export const ML_QUICK_ADD = [10, 50]
-export const ML_PRESETS = [60, 120, 160, 200]
 export const MINUTE_QUICK_ADD = [1, 5, 10]
 
 export const AMOUNT_FEEDING_TYPES = new Set(['formula', 'pumped', 'food'])

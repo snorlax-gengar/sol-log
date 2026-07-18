@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import {
   breastMinutes,
+  diaperStatusEmoji,
   diaperStatusLabel,
   feedingTypeLabel,
   formatLoggedAt,
@@ -13,6 +14,7 @@ import {
 function CareLogCard({ log, onEdit, onDelete, isBusy }) {
   const feeding = hasFeeding(log)
   const diaper = hasDiaper(log)
+  const diaperEmoji = diaper ? diaperStatusEmoji(log.diaper_status) : null
 
   return (
     <article className="rounded-2xl bg-white p-4 ring-1 ring-[#E8E2D9]">
@@ -25,7 +27,16 @@ function CareLogCard({ log, onEdit, onDelete, isBusy }) {
             <p className="mt-1 text-xs text-stone-500">{log.general_notes}</p>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
+          {diaperEmoji && (
+            <span
+              aria-label={`기저귀: ${diaperStatusLabel(log.diaper_status)}`}
+              title={diaperStatusLabel(log.diaper_status)}
+              className="rounded-lg bg-[#F7F1E8] px-2 py-1 text-sm leading-none"
+            >
+              {diaperEmoji}
+            </span>
+          )}
           <button
             type="button"
             aria-label="수정"

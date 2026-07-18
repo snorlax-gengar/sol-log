@@ -4,8 +4,6 @@ import {
   AMOUNT_FEEDING_TYPES,
   FEEDING_TYPES,
   MINUTE_QUICK_ADD,
-  ML_PRESETS,
-  ML_QUICK_ADD,
 } from '@/constants/careLog'
 
 function QuickAddRow({ label, value, unit, onAdd, onReset, amounts }) {
@@ -89,29 +87,29 @@ function FeedingSection({
       )}
 
       {showAmount && (
-        <div className="mt-3 grid gap-3">
-          <QuickAddRow
-            label="용량"
-            value={feedingAmountMl}
-            unit="ml"
-            amounts={ML_QUICK_ADD}
-            onAdd={(n) => onAmountChange(feedingAmountMl + n)}
-            onReset={() => onAmountChange(0)}
-          />
-          <div>
-            <p className="mb-2 text-xs font-medium text-stone-500">추천 용량</p>
-            <div className="flex flex-wrap gap-2">
-              {ML_PRESETS.map((ml) => (
-                <ChipButton
-                  key={ml}
-                  selected={feedingAmountMl === ml}
-                  onClick={() => onAmountChange(ml)}
-                >
-                  {ml}ml
-                </ChipButton>
-              ))}
+        <div className="mt-3">
+          <label className="block rounded-xl bg-[#FDFBF7] p-3 ring-1 ring-[#E8E2D9]/80">
+            <span className="mb-2 block text-xs font-medium text-stone-500">
+              용량 (ml)
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={feedingAmountMl === 0 ? '' : String(feedingAmountMl)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
+                  onAmountChange(digits === '' ? 0 : Number(digits))
+                }}
+                placeholder="0"
+                className="min-h-12 w-full rounded-xl bg-white px-3 text-right text-lg font-bold text-stone-800 ring-1 ring-[#E8E2D9] outline-none placeholder:text-stone-300 focus:ring-2 focus:ring-[#3D8B5A]/40"
+              />
+              <span className="shrink-0 text-sm font-semibold text-stone-500">
+                ml
+              </span>
             </div>
-          </div>
+          </label>
         </div>
       )}
     </section>

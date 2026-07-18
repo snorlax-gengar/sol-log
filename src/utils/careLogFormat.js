@@ -17,6 +17,10 @@ export function diaperStatusLabel(value) {
   return labelOf(DIAPER_STATUSES, value)
 }
 
+export function diaperStatusEmoji(value) {
+  return DIAPER_STATUSES.find((item) => item.value === value)?.emoji ?? null
+}
+
 export function poopColorLabel(value) {
   return labelOf(POOP_COLORS, value)
 }
