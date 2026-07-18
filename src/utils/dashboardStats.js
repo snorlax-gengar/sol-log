@@ -159,6 +159,69 @@ export function getFeedingHourlyPattern(logs, days = 7) {
   return counts
 }
 
+/**
+ * 일자별 수유 총량 추세 (최근 days일, 오래된 날 -> 오늘 순).
+ * ml은 분유/유축/이유식 합, breastMin은 모유 총 분.
+ */
+export function getDailyFeedingTotals(logs, days = 7) {
+  const result = []
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const day = startOfDay()
+    day.setDate(day.getDate() - i)
+    result.push({
+      key: day.getTime(),
+      date: day.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }),
+      ml: 0,
+      breastMin: 0,
+      count: 0,
+    })
+  }
+  const indexByKey = new Map(result.map((item, index) => [item.key, index]))
+
+  logs.forEach((log) => {
+    if (!hasFeeding(log)) return
+    const index = indexByKey.get(startOfDay(new Date(log.logged_at)).getTime())
+    if (index == null) return
+    const item = result[index]
+    item.count += 1
+    if (log.feeding_type === 'breast') {
+      item.breastMin += breastMinutes(log)
+    } else {
+      item.ml += log.feeding_amount_ml || 0
+    }
+  })
+
+  return result
+}
+
+/**
+ * 날짜 x 시간대 수유 히트맵 (최근 days일, 오늘이 맨 위).
+ * [{ key, dateLabel, counts: number[24] }]
+ */
+export function getFeedingHeatmap(logs, days = 7) {
+  const rows = []
+  for (let i = 0; i < days; i += 1) {
+    const day = startOfDay()
+    day.setDate(day.getDate() - i)
+    rows.push({
+      key: day.getTime(),
+      dateLabel: day.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }),
+      counts: Array.from({ length: 24 }, () => 0),
+    })
+  }
+  const indexByKey = new Map(rows.map((row, index) => [row.key, index]))
+
+  logs.forEach((log) => {
+    if (!hasFeeding(log)) return
+    const loggedAt = new Date(log.logged_at)
+    const index = indexByKey.get(startOfDay(loggedAt).getTime())
+    if (index == null) return
+    rows[index].counts[loggedAt.getHours()] += 1
+  })
+
+  return rows
+}
+
 export function getWeightTrend(medicalLogs) {
   return medicalLogs
     .filter((log) => log.baby_weight_kg != null)

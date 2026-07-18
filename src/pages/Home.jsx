@@ -7,6 +7,8 @@ import { useMedicalLogs } from '@/hooks/useMedicalLogs'
 import { useFeedingAlarmContext } from '@/context/FeedingAlarmContext'
 import {
   formatMinutesDuration,
+  getDailyFeedingTotals,
+  getFeedingHeatmap,
   getFeedingHourlyPattern,
   getLastFeedingAt,
   getTodayAverageFeedingIntervalMinutes,
@@ -25,6 +27,8 @@ function Home() {
     getTodayAverageFeedingIntervalMinutes(logs),
   )
   const hourlyPattern = getFeedingHourlyPattern(logs)
+  const dailyTotals = getDailyFeedingTotals(logs)
+  const heatmap = getFeedingHeatmap(logs)
   const weightTrend = getWeightTrend(medicalLogs)
 
   return (
@@ -57,6 +61,8 @@ function Home() {
           <PatternCharts
             hourlyPattern={hourlyPattern}
             weightTrend={weightTrend}
+            dailyTotals={dailyTotals}
+            heatmap={heatmap}
           />
         </>
       )}
