@@ -1,5 +1,15 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { formatShortDate } from '@/utils/dateTime'
+import { resignPhotoPath } from '@/lib/diaryPhotos'
+
+// 서명 URL이 만료돼 이미지가 깨지면 경로로 재발급해 다시 시도 (1회)
+async function handleImageError(e, path) {
+  const img = e.currentTarget
+  if (!path || img.dataset.retried === '1') return
+  img.dataset.retried = '1'
+  const fresh = await resignPhotoPath(path)
+  if (fresh) img.src = fresh
+}
 
 /** 일기 카드 (Pure Component). authorName은 자녀 열람 시에만 전달된다. */
 function DiaryCard({ diary, authorName, canEdit, isBusy, onEdit, onDelete }) {
@@ -44,23 +54,26 @@ function DiaryCard({ diary, authorName, canEdit, isBusy, onEdit, onDelete }) {
         {diary.content}
       </p>
 
-      {diary.photoUrls?.length > 0 && (
+      {diary.photos?.length > 0 && (
         <div
           className={`mt-3 grid gap-2 ${
-            diary.photoUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+            diary.photos.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
           }`}
         >
-          {diary.photoUrls.map((url, index) => (
-            <img
-              key={url}
-              src={url}
-              alt={`일기 사진 ${index + 1}`}
-              loading="lazy"
-              className={`w-full rounded-xl object-cover ring-1 ring-[#E8E2D9] ${
-                diary.photoUrls.length === 1 ? 'max-h-80' : 'aspect-square'
-              }`}
-            />
-          ))}
+          {diary.photos.map((photo, index) =>
+            photo.url ? (
+              <img
+                key={photo.path}
+                src={photo.url}
+                alt={`일기 사진 ${index + 1}`}
+                loading="lazy"
+                onError={(e) => handleImageError(e, photo.path)}
+                className={`w-full rounded-xl object-cover ring-1 ring-[#E8E2D9] ${
+                  diary.photos.length === 1 ? 'max-h-80' : 'aspect-square'
+                }`}
+              />
+            ) : null,
+          )}
         </div>
       )}
     </article>

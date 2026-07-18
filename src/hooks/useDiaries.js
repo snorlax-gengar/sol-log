@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-
-const BUCKET = 'diary-photos'
-const SIGNED_URL_TTL_SEC = 3600
+import { DIARY_BUCKET as BUCKET, signPhotoPaths } from '@/lib/diaryPhotos'
 
 function sortDiaries(rows) {
   return [...rows].sort(
@@ -12,28 +10,26 @@ function sortDiaries(rows) {
   )
 }
 
-/** photo_paths -> 1시간짜리 서명 URL 배열(photoUrls)로 변환 */
+/**
+ * photo_paths -> 서명 URL 부여.
+ * photos: [{ path, url }] (path 유지 -> 만료 시 개별 재발급 가능)
+ * photoUrls: 유효한 URL 배열 (기존 소비자 호환용)
+ */
 async function withPhotoUrls(rows) {
   const allPaths = rows.flatMap((row) => row.photo_paths || [])
-  if (allPaths.length === 0) {
-    return rows.map((row) => ({ ...row, photoUrls: [] }))
-  }
+  const urlMap = await signPhotoPaths(allPaths)
 
-  const { data } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrls(allPaths, SIGNED_URL_TTL_SEC)
-
-  const urlMap = new Map()
-  ;(data || []).forEach((item) => {
-    if (item.signedUrl) urlMap.set(item.path, item.signedUrl)
+  return rows.map((row) => {
+    const photos = (row.photo_paths || []).map((path) => ({
+      path,
+      url: urlMap.get(path) || null,
+    }))
+    return {
+      ...row,
+      photos,
+      photoUrls: photos.map((p) => p.url).filter(Boolean),
+    }
   })
-
-  return rows.map((row) => ({
-    ...row,
-    photoUrls: (row.photo_paths || [])
-      .map((path) => urlMap.get(path))
-      .filter(Boolean),
-  }))
 }
 
 /**

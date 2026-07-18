@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
+import ErrorBoundary from '@/components/layout/ErrorBoundary'
 import Logo from '@/components/ui/Logo'
 import { ToastProvider } from '@/components/ui/ToastProvider'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { ChildProvider } from '@/context/ChildContext'
 import { CareLogsProvider } from '@/context/CareLogsContext'
 import { FeedingAlarmProvider } from '@/context/FeedingAlarmContext'
 import Login from '@/pages/Login'
@@ -87,23 +89,27 @@ function AuthedApp() {
   )
 
   // 부모 계정만 기록/알람 사용 (자녀는 기록 접근 권한 없음).
-  // CareLogsProvider가 단일 소스이므로 그 안에서 알람이 같은 데이터를 공유한다.
+  // ChildProvider가 활성 아이를 먼저 해석한 뒤 CareLogsProvider가 그 아이로 조회한다.
   if (isChild) return shell
 
   return (
-    <CareLogsProvider>
-      <FeedingAlarmProvider>{shell}</FeedingAlarmProvider>
-    </CareLogsProvider>
+    <ChildProvider>
+      <CareLogsProvider>
+        <FeedingAlarmProvider>{shell}</FeedingAlarmProvider>
+      </CareLogsProvider>
+    </ChildProvider>
   )
 }
 
 function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <AuthedApp />
-      </AuthProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <AuthedApp />
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   )
 }
 

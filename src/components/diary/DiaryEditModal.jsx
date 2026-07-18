@@ -8,12 +8,11 @@ const MAX_PHOTOS = 5
 function DiaryEditModal({ diary, isSaving, onClose, onSave }) {
   const [content, setContent] = useState(diary.content)
   const [diaryDate, setDiaryDate] = useState(diary.diary_date)
-  // 기존 사진: { path, url } 유지 목록
-  const [kept, setKept] = useState(() =>
-    (diary.photo_paths || []).map((path, i) => ({
-      path,
-      url: diary.photoUrls?.[i],
-    })),
+  // 기존 사진: { path, url } 유지 목록 (photos에 path·url이 정렬돼 있음)
+  const [kept, setKept] = useState(
+    () =>
+      diary.photos ||
+      (diary.photo_paths || []).map((path) => ({ path, url: null })),
   )
   const [newItems, setNewItems] = useState([]) // { file, previewUrl }
   const [error, setError] = useState('')
