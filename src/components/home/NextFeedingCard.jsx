@@ -8,6 +8,8 @@ function NextFeedingCard({ alarm }) {
     enabled,
     toggleEnabled,
     permission,
+    pushError,
+    pushSupported,
     intervalMinutes,
     isAuto,
     dueAt,
@@ -80,10 +82,17 @@ function NextFeedingCard({ alarm }) {
           iPhone은 Safari 공유 → 홈 화면에 추가 후 그 앱에서 알림을 지원해요.
         </p>
       )}
+      {enabled && pushError && (
+        <p className="mt-2 rounded-xl bg-[#F7F1E8] px-3 py-2 text-xs leading-relaxed text-stone-500">
+          서버 알림 준비 중이에요 ({pushError}) — 우선 앱이 열려 있는 동안은
+          정상 동작해요.
+        </p>
+      )}
       {enabled && (
         <p className="mt-2 text-[11px] text-stone-400">
-          앱이 열려 있는 동안 동작하며, 시간이 지나면 15분 간격으로 다시
-          알려드려요. 새 수유를 기록하면 자동으로 리셋됩니다.
+          {pushSupported && !pushError
+            ? '앱을 꺼도 수유 예상 시각에 알림이 와요. 새 수유를 기록하면 자동으로 리셋됩니다.'
+            : '앱이 열려 있는 동안 동작하며, 시간이 지나면 15분 간격으로 다시 알려드려요.'}
         </p>
       )}
     </div>

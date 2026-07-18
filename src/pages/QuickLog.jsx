@@ -6,7 +6,7 @@ import {
   AMOUNT_FEEDING_TYPES,
   POOP_DIAPER_STATUSES,
 } from '@/constants/careLog'
-import { useCareLogs } from '@/hooks/useCareLogs'
+import { useCareLogsContext } from '@/context/CareLogsContext'
 import { useBreastTimer } from '@/hooks/useBreastTimer'
 import { useToast } from '@/components/ui/ToastProvider'
 import {
@@ -33,7 +33,7 @@ function createInitialForm({ keepPreset = true } = {}) {
 
 function QuickLog() {
   const [form, setForm] = useState(createInitialForm)
-  const { insertCareLog, isSaving, error, setError } = useCareLogs()
+  const { insertCareLog, isSaving, error, setError } = useCareLogsContext()
   const breastTimer = useBreastTimer()
   const { showToast } = useToast()
 

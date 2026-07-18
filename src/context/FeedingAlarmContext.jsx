@@ -1,16 +1,16 @@
 import { createContext, useContext } from 'react'
-import { useCareLogs } from '@/hooks/useCareLogs'
 import { useFeedingAlarm } from '@/hooks/useFeedingAlarm'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useCareLogsContext } from '@/context/CareLogsContext'
 
 const FeedingAlarmContext = createContext(null)
 
 /**
- * 앱 전역 수유 알람. 어느 탭에 있어도 (앱이 열려 있는 동안) 알람이 동작하도록
- * AppShell 바깥 레벨에서 자체 Realtime 구독으로 기록을 추적한다.
+ * 앱 전역 수유 알람. 공유 CareLogsProvider의 기록을 그대로 사용하므로
+ * 어느 화면에서 기록해도 즉시 다음 수유 예상/알람에 반영된다.
  */
 export function FeedingAlarmProvider({ children }) {
-  const { logs } = useCareLogs({ enableRealtime: true })
+  const { logs } = useCareLogsContext()
   const { showToast } = useToast()
   const alarm = useFeedingAlarm(logs, { onAlarm: showToast })
 

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { hasFeeding } from '@/utils/careLogFormat'
 import { getRecentAverageFeedingIntervalMinutes } from '@/utils/dashboardStats'
+import { showSystemNotification } from '@/lib/notify'
+import { isPushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push'
 
 const DEFAULT_INTERVAL_MIN = 180 // 텀 데이터가 부족할 때 기본 3시간
 const MIN_INTERVAL_MIN = 60 // 계산된 텀 하한 (오기록 방어)
@@ -96,24 +98,22 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
         ? '수유 시간이 되었어요.'
         : `수유 예상 시간이 ${overdueMinutes}분 지났어요.`
 
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      try {
-        // eslint-disable-next-line no-new
-        new Notification('솔로그 수유 알람', {
-          body: message,
-          tag: `sol-log-feeding-${lastFeeding.id}`, // 같은 사이클은 알림 갱신
-          icon: '/apple-touch-icon.png',
-        })
-      } catch {
-        // 일부 모바일 브라우저는 페이지 컨텍스트 Notification 미지원 -> 토스트로 폴백
-      }
-    }
+    // 서비스워커 경로로 시스템 알림 시도 (설치형 PWA/iOS 포함)
+    showSystemNotification({
+      title: '솔로그 수유 알람',
+      body: message,
+      tag: `sol-log-feeding-${lastFeeding.id}`, // 같은 사이클은 알림 갱신
+    })
 
+    // 앱이 열려 있으면 인앱 토스트도 함께
     onAlarmRef.current?.(message)
   }, [now, enabled, dueAtMs, lastFeeding])
 
+  const [pushError, setPushError] = useState(null)
+
   const toggleEnabled = useCallback(async () => {
     const next = !enabled
+    setPushError(null)
 
     if (next && typeof Notification !== 'undefined') {
       let current = Notification.permission
@@ -125,8 +125,17 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
         }
       }
       setPermission(current)
+
+      // 권한이 있으면 서버 푸시 구독 (앱을 꺼도 알람이 오게)
+      if (current === 'granted' && isPushSupported()) {
+        const { error } = await subscribeToPush()
+        if (error) setPushError(error)
+      }
     } else {
       setPermission(notificationPermission())
+      if (isPushSupported()) {
+        await unsubscribeFromPush()
+      }
     }
 
     // 시스템 알림 권한이 없어도 인앱 토스트 알람은 동작하므로 켜는 것 허용
@@ -138,6 +147,8 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
   return {
     enabled,
     toggleEnabled,
+    pushError, // 서버 푸시 구독 실패 사유 (없으면 null)
+    pushSupported: isPushSupported(),
     permission, // 'granted' | 'denied' | 'default' | 'unsupported'
     intervalMinutes,
     isAuto, // true면 최근 기록 기반 자동 계산, false면 기본 3시간

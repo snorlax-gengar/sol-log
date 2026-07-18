@@ -3,6 +3,7 @@ import AppShell from '@/components/layout/AppShell'
 import Logo from '@/components/ui/Logo'
 import { ToastProvider } from '@/components/ui/ToastProvider'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { CareLogsProvider } from '@/context/CareLogsContext'
 import { FeedingAlarmProvider } from '@/context/FeedingAlarmContext'
 import Login from '@/pages/Login'
 import Home from '@/pages/Home'
@@ -85,8 +86,15 @@ function AuthedApp() {
     </AppShell>
   )
 
-  // 수유 알람은 부모 계정에서만 (자녀는 기록 접근 권한 없음)
-  return isChild ? shell : <FeedingAlarmProvider>{shell}</FeedingAlarmProvider>
+  // 부모 계정만 기록/알람 사용 (자녀는 기록 접근 권한 없음).
+  // CareLogsProvider가 단일 소스이므로 그 안에서 알람이 같은 데이터를 공유한다.
+  if (isChild) return shell
+
+  return (
+    <CareLogsProvider>
+      <FeedingAlarmProvider>{shell}</FeedingAlarmProvider>
+    </CareLogsProvider>
+  )
 }
 
 function App() {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import CareLogRow from '@/components/history/CareLogRow'
 import EditCareLogModal from '@/components/history/EditCareLogModal'
-import { useCareLogs } from '@/hooks/useCareLogs'
+import { useCareLogsContext } from '@/context/CareLogsContext'
 import { useToast } from '@/components/ui/ToastProvider'
 import { getFeedingIntervalMap } from '@/utils/dashboardStats'
 import { formatShortDate, toLocalDateValue } from '@/utils/dateTime'
@@ -33,7 +33,7 @@ function History() {
     error,
     updateCareLog,
     deleteCareLog,
-  } = useCareLogs({ enableRealtime: true })
+  } = useCareLogsContext()
   const [editingLog, setEditingLog] = useState(null)
   const { showToast } = useToast()
 

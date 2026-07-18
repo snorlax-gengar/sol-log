@@ -55,6 +55,20 @@ export function useCareLogs({ enableRealtime = false } = {}) {
     fetchCareLogs()
   }, [fetchCareLogs])
 
+  // 앱이 포그라운드로 돌아오면(밤새 백그라운드였다가 아침에 다시 열기 등)
+  // Realtime으로 놓친 변경이 있을 수 있으므로 최신 데이터를 다시 불러온다.
+  useEffect(() => {
+    const refetchIfVisible = () => {
+      if (document.visibilityState === 'visible') fetchCareLogs()
+    }
+    document.addEventListener('visibilitychange', refetchIfVisible)
+    window.addEventListener('focus', refetchIfVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', refetchIfVisible)
+      window.removeEventListener('focus', refetchIfVisible)
+    }
+  }, [fetchCareLogs])
+
   useEffect(() => {
     if (!enableRealtime) return undefined
 
