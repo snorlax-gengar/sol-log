@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus, Send, X } from 'lucide-react'
+import CalendarDatePicker from '@/components/ui/CalendarDatePicker'
 import { toLocalDateValue } from '@/utils/dateTime'
 
 const MAX_PHOTOS = 5
@@ -71,13 +72,11 @@ function DiaryComposer({ isSaving, onSubmit }) {
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-stone-800">일기 쓰기</h2>
-        <input
-          type="date"
+        <CalendarDatePicker
           value={diaryDate}
           max={toLocalDateValue(new Date())}
-          onChange={(e) => e.target.value && setDiaryDate(e.target.value)}
-          aria-label="일기 날짜"
-          className="rounded-lg bg-[#FDFBF7] px-2.5 py-1.5 text-xs font-semibold text-[#2F6B45] ring-1 ring-[#E8E2D9] outline-none focus:ring-2 focus:ring-[#3D8B5A]/40"
+          onChange={(next) => next && setDiaryDate(next)}
+          ariaLabel="일기 날짜"
         />
       </div>
 

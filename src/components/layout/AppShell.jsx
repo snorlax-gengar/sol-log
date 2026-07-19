@@ -25,8 +25,8 @@ function AppShell({
   }, [activeTab])
 
   return (
-    <div className="flex min-h-dvh justify-center bg-[#EFE9DF]">
-      <div className="flex min-h-dvh w-full max-w-[390px] flex-col bg-[#FDFBF7] shadow-[0_0_40px_rgba(120,100,80,0.08)]">
+    <div className="flex h-dvh justify-center overflow-hidden bg-[#EFE9DF]">
+      <div className="flex h-dvh w-full max-w-[390px] flex-col overflow-hidden bg-[#FDFBF7] shadow-[0_0_40px_rgba(120,100,80,0.08)]">
         <header className="safe-top border-b border-[#E8E2D9] px-5 py-4">
           <div className="flex items-center gap-3">
             <Logo size={40} className="shrink-0" />
@@ -67,7 +67,7 @@ function AppShell({
 
         {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
 
-        <main ref={mainRef} className="flex-1 overflow-y-auto px-5 py-5">
+        <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
           {children}
         </main>
 
