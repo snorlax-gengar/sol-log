@@ -254,7 +254,11 @@ function CalendarDatePicker({
               const selectedDay = sameDay(day, selected)
               const today = sameDay(day, new Date())
               const disabled = isDisabled(day)
-              const weekend = day.getDay() === 0 || day.getDay() === 6
+              const dow = day.getDay()
+              const dayTone =
+                dow === 0 ? 'text-rose-400' : dow === 6 ? 'text-sky-500' : 'text-stone-800'
+              const mutedTone =
+                dow === 0 ? 'text-rose-300' : dow === 6 ? 'text-sky-300' : 'text-stone-300'
 
               return (
                 <button
@@ -266,12 +270,10 @@ function CalendarDatePicker({
                     selectedDay
                       ? 'bg-[#3D8B5A] text-white shadow-sm'
                       : disabled
-                        ? 'cursor-not-allowed text-stone-300'
+                        ? `cursor-not-allowed ${mutedTone}`
                         : inMonth
-                          ? weekend
-                            ? 'text-stone-600 hover:bg-[#E6F4EA]'
-                            : 'text-stone-800 hover:bg-[#E6F4EA]'
-                          : 'text-stone-300 hover:bg-[#F7F3EC]'
+                          ? `${dayTone} hover:bg-[#E6F4EA]`
+                          : `${mutedTone} hover:bg-[#F7F3EC]`
                   } ${today && !selectedDay ? 'ring-1 ring-[#3D8B5A]/45' : ''}`}
                 >
                   {day.getDate()}

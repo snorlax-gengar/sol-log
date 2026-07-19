@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { LogIn } from 'lucide-react'
 import Logo from '@/components/ui/Logo'
+import BrandEasterEgg from '@/components/ui/BrandEasterEgg'
+import Copyright from '@/components/ui/Copyright'
+import { BRAND_NAME, BRAND_TAGLINE } from '@/constants/brand'
 import { FAMILY_PROFILES } from '@/constants/family'
 import { useAuth } from '@/context/AuthContext'
 
@@ -33,13 +36,13 @@ function Login() {
     <div className="flex min-h-dvh justify-center bg-[#EFE9DF]">
       <div className="flex min-h-dvh w-full max-w-[390px] flex-col justify-center bg-[#FDFBF7] px-6 py-10">
         <div className="flex flex-col items-center">
-          <Logo size={88} />
+          <BrandEasterEgg>
+            <Logo size={88} />
+          </BrandEasterEgg>
           <p className="mt-4 text-xs font-medium tracking-wide text-[#3D8B5A]">
-            SOL-LOG
+            {BRAND_NAME}
           </p>
-          <h1 className="mt-1 text-xl font-bold text-stone-800">
-            노이솔의 하루
-          </h1>
+          <h1 className="mt-1 text-xl font-bold text-stone-800">{BRAND_TAGLINE}</h1>
           <p className="mt-2 text-sm text-stone-500">누구세요?</p>
         </div>
 
@@ -105,6 +108,7 @@ function Login() {
         <p className="mt-8 text-center text-[11px] leading-relaxed text-stone-400">
           가족 전용 공간이에요. 계정은 Supabase 대시보드에서 관리합니다.
         </p>
+        <Copyright className="mt-3" />
       </div>
     </div>
   )

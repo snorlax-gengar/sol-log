@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { RotateCw, Settings } from 'lucide-react'
 import BottomNav from '@/components/layout/BottomNav'
 import AccountModal from '@/components/layout/AccountModal'
+import BrandEasterEgg from '@/components/ui/BrandEasterEgg'
 import Logo from '@/components/ui/Logo'
+import { BRAND_NAME, BRAND_TAGLINE } from '@/constants/brand'
 
 // vite.config.js의 define으로 주입되는 빌드 시각 (dev 서버에서는 'dev')
 const APP_VERSION =
@@ -29,16 +31,18 @@ function AppShell({
       <div className="flex h-dvh w-full max-w-[390px] flex-col overflow-hidden bg-[#FDFBF7] shadow-[0_0_40px_rgba(120,100,80,0.08)]">
         <header className="safe-top border-b border-[#E8E2D9] px-5 py-4">
           <div className="flex items-center gap-3">
-            <Logo size={40} className="shrink-0" />
+            <BrandEasterEgg className="shrink-0">
+              <Logo size={40} />
+            </BrandEasterEgg>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium tracking-wide text-[#3D8B5A]">
-                SOL-LOG
+                {BRAND_NAME}
                 <span className="ml-1.5 text-[9px] font-normal text-stone-400">
                   v{APP_VERSION}
                 </span>
               </p>
               <h1 className="mt-0.5 text-lg font-semibold text-stone-800">
-                노이솔의 하루
+                {BRAND_TAGLINE}
               </h1>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">

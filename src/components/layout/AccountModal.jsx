@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Download, KeyRound, LogOut, X } from 'lucide-react'
+import Copyright from '@/components/ui/Copyright'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/components/ui/ToastProvider'
 import { exportAllData } from '@/utils/exportData'
@@ -140,6 +141,8 @@ function AccountModal({ onClose }) {
           <LogOut size={16} />
           로그아웃
         </button>
+
+        <Copyright className="mt-5" />
       </div>
     </div>
   )
