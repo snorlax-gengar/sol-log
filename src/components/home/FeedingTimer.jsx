@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Timer } from 'lucide-react'
 import { formatElapsed } from '@/utils/dashboardStats'
+import { formatRelativeDay, toLocalTimeValue } from '@/utils/dateTime'
 
 function FeedingTimer({ lastFeedingAt }) {
   const [now, setNow] = useState(() => new Date())
@@ -12,6 +13,11 @@ function FeedingTimer({ lastFeedingAt }) {
   }, [])
 
   const elapsed = formatElapsed(lastFeedingAt, now)
+  const lastDate = lastFeedingAt
+    ? lastFeedingAt instanceof Date
+      ? lastFeedingAt
+      : new Date(lastFeedingAt)
+    : null
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-[#E6F4EA] to-[#D8EDDF] px-4 py-4 ring-1 ring-[#BBDCC7]/60">
@@ -19,9 +25,14 @@ function FeedingTimer({ lastFeedingAt }) {
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/80 text-[#3D8B5A]">
           <Timer size={22} />
         </span>
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold tracking-wide text-[#2F6B45]">
-            마지막 수유로부터
+            마지막 수유
+            {lastDate && (
+              <span className="ml-1.5 font-bold text-stone-700">
+                {formatRelativeDay(lastDate, now)} {toLocalTimeValue(lastDate)}
+              </span>
+            )}
           </p>
           {elapsed ? (
             <p className="mt-0.5 text-2xl font-bold text-stone-800">

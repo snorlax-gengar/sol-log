@@ -1,6 +1,7 @@
 import SummaryCards from '@/components/home/SummaryCards'
 import FeedingTimer from '@/components/home/FeedingTimer'
 import NextFeedingCard from '@/components/home/NextFeedingCard'
+import FeedingClock from '@/components/home/FeedingClock'
 import PatternCharts from '@/components/home/PatternCharts'
 import { useCareLogsContext } from '@/context/CareLogsContext'
 import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
@@ -9,9 +10,9 @@ import {
   formatMinutesDuration,
   getDailyFeedingTotals,
   getFeedingHeatmap,
-  getFeedingHourlyPattern,
   getLastFeedingAt,
   getTodayAverageFeedingIntervalMinutes,
+  getTodayFeedingTimes,
   getTodaySummary,
   getWeightTrend,
 } from '@/utils/dashboardStats'
@@ -26,7 +27,7 @@ function Home() {
   const averageIntervalLabel = formatMinutesDuration(
     getTodayAverageFeedingIntervalMinutes(logs),
   )
-  const hourlyPattern = getFeedingHourlyPattern(logs)
+  const todayFeedingTimes = getTodayFeedingTimes(logs)
   const dailyTotals = getDailyFeedingTotals(logs)
   const heatmap = getFeedingHeatmap(logs)
   const weightTrend = getWeightTrend(medicalLogs)
@@ -58,8 +59,8 @@ function Home() {
             summary={summary}
             averageIntervalLabel={averageIntervalLabel}
           />
+          <FeedingClock times={todayFeedingTimes} />
           <PatternCharts
-            hourlyPattern={hourlyPattern}
             weightTrend={weightTrend}
             dailyTotals={dailyTotals}
             heatmap={heatmap}

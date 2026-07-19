@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -25,7 +26,7 @@ function ChartCard({ title, children, empty }) {
 
 const HEAT_COLORS = ['#F5F1E8', '#A7D3B7', '#57A374', '#2F6B45'] // 0 / 1 / 2 / 3+
 
-function Heatmap({ rows }) {
+function Heatmap({ rows, selected, onSelectCell }) {
   return (
     <div>
       {rows.map((row) => (
@@ -34,18 +35,27 @@ function Heatmap({ rows }) {
             {row.dateLabel}
           </span>
           <div className="grid flex-1 grid-cols-24 gap-[2px]">
-            {row.counts.map((count, hour) => (
-              <div
-                // eslint-disable-next-line react/no-array-index-key
-                key={hour}
-                title={`${row.dateLabel} ${hour}시 · ${count}회`}
-                className="h-4 rounded-[3px]"
-                style={{
-                  backgroundColor:
-                    HEAT_COLORS[Math.min(count, HEAT_COLORS.length - 1)],
-                }}
-              />
-            ))}
+            {row.counts.map((count, hour) => {
+              const isSelected = selected?.key === row.key && selected?.hour === hour
+              const cell = { key: row.key, dateLabel: row.dateLabel, hour, count }
+              return (
+                <button
+                  type="button"
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={hour}
+                  onMouseEnter={() => onSelectCell(cell)}
+                  onMouseLeave={() => onSelectCell(null)}
+                  onClick={() => onSelectCell(isSelected ? null : cell)}
+                  className={`h-4 rounded-[3px] border-0 p-0 transition-transform ${
+                    isSelected ? 'scale-125 ring-2 ring-[#2F6B45]' : ''
+                  }`}
+                  style={{
+                    backgroundColor:
+                      HEAT_COLORS[Math.min(count, HEAT_COLORS.length - 1)],
+                  }}
+                />
+              )
+            })}
           </div>
         </div>
       ))}
@@ -81,8 +91,9 @@ function Heatmap({ rows }) {
   )
 }
 
-function PatternCharts({ hourlyPattern, weightTrend, dailyTotals, heatmap }) {
-  const hasFeedingData = hourlyPattern.some((item) => item.count > 0)
+function PatternCharts({ weightTrend, dailyTotals, heatmap }) {
+  const [selectedCell, setSelectedCell] = useState(null)
+  const hasFeedingData = heatmap.some((row) => row.counts.some((count) => count > 0))
   const hasWeightData = weightTrend.length > 0
   const hasDailyData = dailyTotals.some((item) => item.count > 0)
 
@@ -133,45 +144,27 @@ function PatternCharts({ hourlyPattern, weightTrend, dailyTotals, heatmap }) {
           날짜별 수유 리듬 (히트맵)
         </h2>
         {hasFeedingData ? (
-          <Heatmap rows={heatmap} />
+          <>
+            <Heatmap rows={heatmap} selected={selectedCell} onSelectCell={setSelectedCell} />
+            <div className="mt-2 flex h-11 items-center justify-center rounded-xl bg-[#FDFBF7] px-3 text-center text-xs text-stone-600 ring-1 ring-[#E8E2D9]/70">
+              {selectedCell ? (
+                <span>
+                  <span className="font-semibold text-stone-800">
+                    {selectedCell.dateLabel} {selectedCell.hour}시
+                  </span>
+                  {' · '}총 {selectedCell.count}회 수유
+                </span>
+              ) : (
+                <span className="text-stone-400">칸을 탭하면 상세 정보를 볼 수 있어요.</span>
+              )}
+            </div>
+          </>
         ) : (
           <p className="py-8 text-center text-sm text-stone-500">
             수유 데이터가 쌓이면 밤낮 리듬이 보여요.
           </p>
         )}
       </section>
-      <ChartCard
-        title="최근 7일 수유 시간대 패턴"
-        empty={hasFeedingData ? null : '수유 데이터가 쌓이면 패턴이 보여요.'}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={hourlyPattern} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E8E2D9" vertical={false} />
-            <XAxis
-              dataKey="hour"
-              tick={{ fontSize: 10, fill: '#78716c' }}
-              interval={3}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              allowDecimals={false}
-              tick={{ fontSize: 10, fill: '#78716c' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              cursor={{ fill: 'rgba(61, 139, 90, 0.08)' }}
-              contentStyle={{
-                borderRadius: 12,
-                border: '1px solid #E8E2D9',
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="count" name="수유 횟수" fill="#3D8B5A" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
 
       <ChartCard
         title="몸무게 변화"

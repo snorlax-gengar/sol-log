@@ -3,10 +3,7 @@ import { X } from 'lucide-react'
 import TimePicker from '@/components/quickLog/TimePicker'
 import FeedingSection from '@/components/quickLog/FeedingSection'
 import DiaperSection from '@/components/quickLog/DiaperSection'
-import {
-  AMOUNT_FEEDING_TYPES,
-  POOP_DIAPER_STATUSES,
-} from '@/constants/careLog'
+import { POOP_DIAPER_STATUSES } from '@/constants/careLog'
 import { logToForm } from '@/utils/careLogFormat'
 
 function EditCareLogModal({ log, onClose, onSave, isSaving }) {
@@ -16,17 +13,6 @@ function EditCareLogModal({ log, onClose, onSave, isSaving }) {
   const updateForm = (patch) => {
     setForm((prev) => ({ ...prev, ...patch }))
     setError('')
-  }
-
-  const handleFeedingTypeChange = (feedingType) => {
-    updateForm({
-      feedingType,
-      feedingAmountMl: AMOUNT_FEEDING_TYPES.has(feedingType)
-        ? form.feedingAmountMl
-        : 0,
-      breastLeftMinutes: feedingType === 'breast' ? form.breastLeftMinutes : 0,
-      breastRightMinutes: feedingType === 'breast' ? form.breastRightMinutes : 0,
-    })
   }
 
   const handleDiaperStatusChange = (diaperStatus) => {
@@ -42,21 +28,11 @@ function EditCareLogModal({ log, onClose, onSave, isSaving }) {
     if (form.loggedAt > new Date()) {
       return '기록 시간은 현재보다 미래일 수 없습니다.'
     }
-    if (form.feedingType === 'none' && form.diaperStatus === 'none') {
-      return '수유 또는 기저귀 중 하나 이상 선택해주세요.'
-    }
-    if (
-      form.feedingType === 'breast' &&
-      form.breastLeftMinutes === 0 &&
-      form.breastRightMinutes === 0
-    ) {
-      return '모유 수유 시간을 입력해주세요.'
-    }
-    if (
-      AMOUNT_FEEDING_TYPES.has(form.feedingType) &&
-      form.feedingAmountMl <= 0
-    ) {
-      return '수유 용량(ml)을 입력해주세요.'
+    const hasBreast = form.breastLeftMinutes > 0 || form.breastRightMinutes > 0
+    const hasBottle =
+      (form.formulaMl || 0) > 0 || (form.pumpedMl || 0) > 0 || (form.foodMl || 0) > 0
+    if (!hasBreast && !hasBottle && form.diaperStatus === 'none') {
+      return '수유 또는 기저귀 중 하나 이상 입력해주세요.'
     }
     if (
       POOP_DIAPER_STATUSES.has(form.diaperStatus) &&
@@ -112,19 +88,20 @@ function EditCareLogModal({ log, onClose, onSave, isSaving }) {
             onChange={(loggedAt) => updateForm({ loggedAt })}
           />
 
+          {(form.breastLeftMinutes > 0 || form.breastRightMinutes > 0) && (
+            <p className="rounded-xl bg-[#F7F1E8] px-3 py-2.5 text-xs leading-relaxed text-stone-500">
+              🤱 직접 수유 {form.breastLeftMinutes + form.breastRightMinutes}분 (과거
+              기록 · 더 이상 입력 항목은 아니지만 이 값은 그대로 보존돼요)
+            </p>
+          )}
+
           <FeedingSection
-            feedingType={form.feedingType}
-            feedingAmountMl={form.feedingAmountMl}
-            breastLeftMinutes={form.breastLeftMinutes}
-            breastRightMinutes={form.breastRightMinutes}
-            onFeedingTypeChange={handleFeedingTypeChange}
-            onAmountChange={(feedingAmountMl) => updateForm({ feedingAmountMl })}
-            onLeftMinutesChange={(breastLeftMinutes) =>
-              updateForm({ breastLeftMinutes })
-            }
-            onRightMinutesChange={(breastRightMinutes) =>
-              updateForm({ breastRightMinutes })
-            }
+            formulaMl={form.formulaMl}
+            pumpedMl={form.pumpedMl}
+            foodMl={form.foodMl}
+            onFormulaMlChange={(formulaMl) => updateForm({ formulaMl })}
+            onPumpedMlChange={(pumpedMl) => updateForm({ pumpedMl })}
+            onFoodMlChange={(foodMl) => updateForm({ foodMl })}
           />
 
           <DiaperSection

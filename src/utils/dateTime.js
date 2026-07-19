@@ -46,6 +46,19 @@ export function formatShortDate(date) {
   })
 }
 
+/** 오늘/어제면 그 라벨, 아니면 짧은 날짜 */
+export function formatRelativeDay(date, now = new Date()) {
+  const startOf = (d) => {
+    const x = new Date(d)
+    x.setHours(0, 0, 0, 0)
+    return x
+  }
+  const diffDays = Math.round((startOf(now) - startOf(date)) / 86400000)
+  if (diffDays === 0) return '오늘'
+  if (diffDays === 1) return '어제'
+  return formatShortDate(date)
+}
+
 /**
  * 지금과의 상대 시간: "방금" / "35분 전" / "3시간 15분 전" / "30분 후" 등.
  * 24시간 이상 차이 나면 null (날짜가 이미 표시되므로).

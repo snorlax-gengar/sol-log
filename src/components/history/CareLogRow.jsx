@@ -1,29 +1,26 @@
 import { Trash2 } from 'lucide-react'
+import { BOTTLE_ML_TYPES } from '@/constants/careLog'
 import {
-  breastMinutes,
   diaperStatusEmoji,
   diaperStatusLabel,
-  feedingTypeLabel,
+  feedingParts,
   hasDiaper,
-  hasFeeding,
 } from '@/utils/careLogFormat'
 import { formatMinutesDuration } from '@/utils/dashboardStats'
 import { toLocalTimeValue } from '@/utils/dateTime'
 
-const FEEDING_EMOJI = {
-  breast: '🤱',
-  formula: '🍼',
-  pumped: '🍼',
-  food: '🥣',
-}
+const BOTTLE_META = new Map(BOTTLE_ML_TYPES.map((item) => [item.value, item]))
 
+// 모유·젖병(분유/유축 모유/이유식)을 함께 표시 ("🤱 15분 · 🥛 유축 모유 8ml · 🍼 분유 70ml")
 function feedingSummary(log) {
-  if (!hasFeeding(log)) return null
-  const emoji = FEEDING_EMOJI[log.feeding_type] ?? '🍼'
-  if (log.feeding_type === 'breast') {
-    return `${emoji} 모유 ${breastMinutes(log)}분`
-  }
-  return `${emoji} ${feedingTypeLabel(log.feeding_type)} ${log.feeding_amount_ml || 0}ml`
+  const { breast, bottles } = feedingParts(log)
+  const parts = []
+  if (breast) parts.push(`🤱 ${breast.minutes}분`)
+  bottles?.forEach(({ type, ml }) => {
+    const meta = BOTTLE_META.get(type)
+    parts.push(`${meta?.emoji ?? '🍼'} ${meta?.label ?? type} ${ml}ml`)
+  })
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 /** 타임라인 한 줄 레코드. 행 탭 = 수정, 휴지통 = 삭제. */

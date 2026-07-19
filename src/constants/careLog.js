@@ -2,8 +2,16 @@ export const FEEDING_TYPES = [
   { value: 'none', label: '없음' },
   { value: 'breast', label: '모유' },
   { value: 'formula', label: '분유' },
-  { value: 'pumped', label: '유축' },
+  { value: 'pumped', label: '모유' },
   { value: 'food', label: '이유식' },
+]
+
+// 젖병(모유가 아닌 용량 수유) 종류 — 각각 독립적인 ml 입력칸으로 동시에 기록 가능
+// (예: 모유 8ml + 분유 70ml 처럼 한 기록에 함께)
+export const BOTTLE_ML_TYPES = [
+  { value: 'formula', label: '분유', emoji: '🍼' },
+  { value: 'pumped', label: '모유', emoji: '🥛' },
+  { value: 'food', label: '이유식', emoji: '🥣' },
 ]
 
 export const DIAPER_STATUSES = [

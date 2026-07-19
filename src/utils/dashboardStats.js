@@ -1,4 +1,4 @@
-import { breastMinutes, hasFeeding } from '@/utils/careLogFormat'
+import { breastMinutes, feedingParts, hasFeeding } from '@/utils/careLogFormat'
 
 function startOfDay(date = new Date()) {
   const d = new Date(date)
@@ -14,6 +14,29 @@ function isSameDay(a, b) {
   )
 }
 
+/**
+ * 오늘 수유 시각 목록 (생활시간표 시계 시각화용).
+ * [{ at: Date, hour: number(0~24 소수), kind: 'formula'|'pumped'|'food'|'breast'|'multi', parts }]
+ * kind는 종류를 2개 이상 함께 기록했으면 'multi', 아니면 해당 단일 종류.
+ * parts는 feedingParts(log) 그대로 — 툴팁 등에서 상세 내역(ml/분) 표시용.
+ * ('breast'는 과거에 기록된 직접 수유 데이터 호환용)
+ */
+export function getTodayFeedingTimes(logs) {
+  const today = startOfDay()
+  return logs
+    .filter((log) => hasFeeding(log) && isSameDay(new Date(log.logged_at), today))
+    .map((log) => {
+      const at = new Date(log.logged_at)
+      const parts = feedingParts(log)
+      const types = []
+      if (parts.breast) types.push('breast')
+      parts.bottles?.forEach((b) => types.push(b.type))
+      const kind = types.length > 1 ? 'multi' : types[0]
+      return { at, hour: at.getHours() + at.getMinutes() / 60, kind, parts }
+    })
+    .sort((a, b) => a.hour - b.hour)
+}
+
 export function getTodaySummary(logs) {
   const today = startOfDay()
   const todayLogs = logs.filter((log) =>
@@ -26,13 +49,9 @@ export function getTodaySummary(logs) {
   let poopCount = 0
 
   todayLogs.forEach((log) => {
-    if (log.feeding_type && log.feeding_type !== 'none') {
-      if (log.feeding_type === 'breast') {
-        totalBreastMinutes += breastMinutes(log)
-      } else {
-        totalMl += log.feeding_amount_ml || 0
-      }
-    }
+    // 모유·젖병을 독립적으로 합산 (한 기록에 둘 다 있을 수 있음)
+    totalBreastMinutes += breastMinutes(log)
+    totalMl += log.feeding_amount_ml || 0
 
     if (log.diaper_status === 'pee' || log.diaper_status === 'both') {
       peeCount += 1
@@ -139,26 +158,6 @@ export function getFeedingIntervalMap(logs) {
   return map
 }
 
-export function getFeedingHourlyPattern(logs, days = 7) {
-  const since = new Date()
-  since.setDate(since.getDate() - (days - 1))
-  since.setHours(0, 0, 0, 0)
-
-  const counts = Array.from({ length: 24 }, (_, hour) => ({
-    hour: `${String(hour).padStart(2, '0')}시`,
-    count: 0,
-  }))
-
-  logs.forEach((log) => {
-    if (!hasFeeding(log)) return
-    const loggedAt = new Date(log.logged_at)
-    if (loggedAt < since) return
-    counts[loggedAt.getHours()].count += 1
-  })
-
-  return counts
-}
-
 /**
  * 일자별 수유 총량 추세 (최근 days일, 오래된 날 -> 오늘 순).
  * ml은 분유/유축/이유식 합, breastMin은 모유 총 분.
@@ -184,11 +183,9 @@ export function getDailyFeedingTotals(logs, days = 7) {
     if (index == null) return
     const item = result[index]
     item.count += 1
-    if (log.feeding_type === 'breast') {
-      item.breastMin += breastMinutes(log)
-    } else {
-      item.ml += log.feeding_amount_ml || 0
-    }
+    // 모유·젖병 독립 합산 (한 기록에 둘 다 있을 수 있음)
+    item.breastMin += breastMinutes(log)
+    item.ml += log.feeding_amount_ml || 0
   })
 
   return result

@@ -9,24 +9,17 @@ describe('feedingPreset (localStorage)', () => {
     window.localStorage.clear()
   })
 
-  it('저장한 값 복원', () => {
-    saveLastFeedingPreset({ feedingType: 'formula', feedingAmountMl: 160 })
+  it('저장한 젖병 ml 복원', () => {
+    saveLastFeedingPreset({ formulaMl: 70, pumpedMl: 8, foodMl: 0 })
     expect(loadLastFeedingPreset()).toEqual({
-      feedingType: 'formula',
-      feedingAmountMl: 160,
+      formulaMl: 70,
+      pumpedMl: 8,
+      foodMl: 0,
     })
   })
 
-  it('모유는 용량을 0으로 정규화', () => {
-    saveLastFeedingPreset({ feedingType: 'breast', feedingAmountMl: 999 })
-    expect(loadLastFeedingPreset()).toEqual({
-      feedingType: 'breast',
-      feedingAmountMl: 0,
-    })
-  })
-
-  it('none은 저장하지 않음', () => {
-    saveLastFeedingPreset({ feedingType: 'none', feedingAmountMl: 100 })
+  it('모두 0이면 저장하지 않음', () => {
+    saveLastFeedingPreset({ formulaMl: 0, pumpedMl: 0, foodMl: 0 })
     expect(loadLastFeedingPreset()).toBe(null)
   })
 

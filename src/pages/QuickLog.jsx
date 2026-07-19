@@ -2,12 +2,8 @@ import { useState } from 'react'
 import TimePicker from '@/components/quickLog/TimePicker'
 import FeedingSection from '@/components/quickLog/FeedingSection'
 import DiaperSection from '@/components/quickLog/DiaperSection'
-import {
-  AMOUNT_FEEDING_TYPES,
-  POOP_DIAPER_STATUSES,
-} from '@/constants/careLog'
+import { POOP_DIAPER_STATUSES } from '@/constants/careLog'
 import { useCareLogsContext } from '@/context/CareLogsContext'
-import { useBreastTimer } from '@/hooks/useBreastTimer'
 import { useToast } from '@/components/ui/ToastProvider'
 import {
   loadLastFeedingPreset,
@@ -15,15 +11,17 @@ import {
 } from '@/utils/feedingPreset'
 
 function createInitialForm({ keepPreset = true } = {}) {
-  // 최근 입력값(수유 종류/용량)을 기본값으로 세팅해 타이핑을 줄인다.
+  // 최근 입력값(젖병 ml)을 기본값으로 세팅해 타이핑을 줄인다.
   const preset = keepPreset ? loadLastFeedingPreset() : null
 
   return {
     loggedAt: new Date(),
-    feedingType: preset?.feedingType ?? 'none',
-    feedingAmountMl: preset?.feedingAmountMl ?? 0,
+    // 직접 수유(분 단위) 입력 UI는 없앴지만, DB 컬럼 호환을 위해 0으로 유지
     breastLeftMinutes: 0,
     breastRightMinutes: 0,
+    formulaMl: preset?.formulaMl ?? 0,
+    pumpedMl: preset?.pumpedMl ?? 0,
+    foodMl: preset?.foodMl ?? 0,
     diaperStatus: 'none',
     diaperPoopColor: null,
     diaperPoopTexture: null,
@@ -34,23 +32,11 @@ function createInitialForm({ keepPreset = true } = {}) {
 function QuickLog() {
   const [form, setForm] = useState(createInitialForm)
   const { insertCareLog, isSaving, error, setError } = useCareLogsContext()
-  const breastTimer = useBreastTimer()
   const { showToast } = useToast()
 
   const updateForm = (patch) => {
     setForm((prev) => ({ ...prev, ...patch }))
     setError(null)
-  }
-
-  const handleFeedingTypeChange = (feedingType) => {
-    updateForm({
-      feedingType,
-      feedingAmountMl: AMOUNT_FEEDING_TYPES.has(feedingType)
-        ? form.feedingAmountMl
-        : 0,
-      breastLeftMinutes: feedingType === 'breast' ? form.breastLeftMinutes : 0,
-      breastRightMinutes: feedingType === 'breast' ? form.breastRightMinutes : 0,
-    })
   }
 
   const handleDiaperStatusChange = (diaperStatus) => {
@@ -62,41 +48,16 @@ function QuickLog() {
     })
   }
 
-  // 타이머 [완료] -> 측정된 분을 좌/우 입력값에 자동 반영
-  const handleTimerFinish = () => {
-    const { leftMinutes, rightMinutes } = breastTimer.finish()
-    updateForm({
-      breastLeftMinutes: leftMinutes,
-      breastRightMinutes: rightMinutes,
-    })
-    showToast(
-      `타이머 완료 · 왼쪽 ${leftMinutes}분 / 오른쪽 ${rightMinutes}분 입력됨`,
-    )
-  }
-
   const validate = () => {
     if (form.loggedAt > new Date()) {
       return '기록 시간은 현재보다 미래일 수 없습니다.'
     }
 
-    if (form.feedingType === 'none' && form.diaperStatus === 'none') {
-      return '수유 또는 기저귀 중 하나 이상 선택해주세요.'
-    }
+    const hasBottle =
+      (form.formulaMl || 0) > 0 || (form.pumpedMl || 0) > 0 || (form.foodMl || 0) > 0
 
-    if (form.feedingType === 'breast') {
-      if (breastTimer.isRunning) {
-        return '수유 타이머가 아직 실행 중입니다. [완료]를 먼저 눌러주세요.'
-      }
-      if (form.breastLeftMinutes === 0 && form.breastRightMinutes === 0) {
-        return '모유 수유 시간을 입력해주세요.'
-      }
-    }
-
-    if (
-      AMOUNT_FEEDING_TYPES.has(form.feedingType) &&
-      form.feedingAmountMl <= 0
-    ) {
-      return '수유 용량(ml)을 입력해주세요.'
+    if (!hasBottle && form.diaperStatus === 'none') {
+      return '수유 또는 기저귀 중 하나 이상 입력해주세요.'
     }
 
     if (
@@ -127,7 +88,6 @@ function QuickLog() {
       }
 
       saveLastFeedingPreset(form)
-      breastTimer.reset()
       setForm(createInitialForm())
       showToast('기록이 저장되었습니다.')
     } catch (err) {
@@ -152,20 +112,12 @@ function QuickLog() {
       />
 
       <FeedingSection
-        feedingType={form.feedingType}
-        feedingAmountMl={form.feedingAmountMl}
-        breastLeftMinutes={form.breastLeftMinutes}
-        breastRightMinutes={form.breastRightMinutes}
-        onFeedingTypeChange={handleFeedingTypeChange}
-        onAmountChange={(feedingAmountMl) => updateForm({ feedingAmountMl })}
-        onLeftMinutesChange={(breastLeftMinutes) =>
-          updateForm({ breastLeftMinutes })
-        }
-        onRightMinutesChange={(breastRightMinutes) =>
-          updateForm({ breastRightMinutes })
-        }
-        breastTimer={breastTimer}
-        onTimerFinish={handleTimerFinish}
+        formulaMl={form.formulaMl}
+        pumpedMl={form.pumpedMl}
+        foodMl={form.foodMl}
+        onFormulaMlChange={(formulaMl) => updateForm({ formulaMl })}
+        onPumpedMlChange={(pumpedMl) => updateForm({ pumpedMl })}
+        onFoodMlChange={(foodMl) => updateForm({ foodMl })}
       />
 
       <DiaperSection
