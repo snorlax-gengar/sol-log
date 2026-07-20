@@ -25,7 +25,9 @@ function DiaperSection({
           <ChipButton
             key={item.value}
             selected={diaperStatus === item.value}
-            onClick={() => onStatusChange(item.value)}
+            onClick={() =>
+              onStatusChange(diaperStatus === item.value ? 'none' : item.value)
+            }
             className="gap-1.5"
           >
             {item.emoji && <span aria-hidden>{item.emoji}</span>}

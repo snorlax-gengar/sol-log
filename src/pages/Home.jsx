@@ -1,18 +1,22 @@
 import SummaryCards from '@/components/home/SummaryCards'
 import FeedingTimer from '@/components/home/FeedingTimer'
 import NextFeedingCard from '@/components/home/NextFeedingCard'
-import FeedingClock from '@/components/home/FeedingClock'
+// 오늘 수유 시간표(파이 차트)는 반응이 별로라 우선 비활성화.
+// 컴포넌트(FeedingClock.jsx)와 데이터 함수(getTodayFeedingTimes)는
+// 나중에 다른 형태로 변형해 쓸 수 있도록 지우지 않고 남겨둠.
+// import FeedingClock from '@/components/home/FeedingClock'
 import PatternCharts from '@/components/home/PatternCharts'
 import { useCareLogsContext } from '@/context/CareLogsContext'
 import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
 import { useFeedingAlarmContext } from '@/context/FeedingAlarmContext'
 import {
   formatMinutesDuration,
+  getAverageDailyFeedingMl,
   getDailyFeedingTotals,
   getFeedingHeatmap,
   getLastFeedingAt,
   getTodayAverageFeedingIntervalMinutes,
-  getTodayFeedingTimes,
+  // getTodayFeedingTimes, // FeedingClock 전용 — 아래 참고
   getTodaySummary,
   getWeightTrend,
 } from '@/utils/dashboardStats'
@@ -27,7 +31,8 @@ function Home() {
   const averageIntervalLabel = formatMinutesDuration(
     getTodayAverageFeedingIntervalMinutes(logs),
   )
-  const todayFeedingTimes = getTodayFeedingTimes(logs)
+  const averageDailyFeedingMl = getAverageDailyFeedingMl(logs)
+  // const todayFeedingTimes = getTodayFeedingTimes(logs) // FeedingClock 전용 — 아래 참고
   const dailyTotals = getDailyFeedingTotals(logs)
   const heatmap = getFeedingHeatmap(logs)
   const weightTrend = getWeightTrend(medicalLogs)
@@ -58,8 +63,14 @@ function Home() {
           <SummaryCards
             summary={summary}
             averageIntervalLabel={averageIntervalLabel}
+            averageDailyFeedingMl={averageDailyFeedingMl}
           />
-          <FeedingClock times={todayFeedingTimes} />
+          {/*
+            오늘 수유 시간표(파이 차트) — 반응이 별로라 우선 비활성화.
+            나중에 다른 형태로 변형해 쓰고 싶으면 아래 주석을 풀고
+            위쪽 import/todayFeedingTimes 주석도 함께 풀면 됨.
+            <FeedingClock times={todayFeedingTimes} />
+          */}
           <PatternCharts
             weightTrend={weightTrend}
             dailyTotals={dailyTotals}

@@ -14,8 +14,10 @@ export const BOTTLE_ML_TYPES = [
   { value: 'food', label: '이유식', emoji: '🥣' },
 ]
 
+// 칩 목록엔 '없음'을 두지 않는다 — 아무것도 선택하지 않은 상태 자체가
+// "기저귀 확인 안 함(none)"을 의미하므로 별도 칩이 필요 없다.
+// (체크했는데 깨끗했으면 '깨끗'을 선택)
 export const DIAPER_STATUSES = [
-  { value: 'none', label: '없음', emoji: null },
   { value: 'pee', label: '소변', emoji: '💧' },
   { value: 'poop', label: '대변', emoji: '💩' },
   { value: 'both', label: '둘 다', emoji: '💧💩' },

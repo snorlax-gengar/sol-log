@@ -14,15 +14,37 @@ function SummaryCard({ label, value, unit }) {
   )
 }
 
-function SummaryCards({ summary, averageIntervalLabel }) {
+function SummaryCards({ summary, averageIntervalLabel, averageDailyFeedingMl }) {
   return (
     <div className="grid grid-cols-2 gap-2.5">
-      <SummaryCard label="오늘 수유량" value={summary.totalMl} unit="ml" />
-      <SummaryCard
-        label="모유 총 시간"
-        value={summary.totalBreastMinutes}
-        unit="분"
-      />
+      <div className="rounded-2xl bg-white p-3.5 ring-1 ring-[#E8E2D9]">
+        <p className="text-xs font-medium text-stone-500">오늘 수유량</p>
+        <p className="mt-1.5 text-xl font-semibold text-stone-800">
+          {summary.totalMl}
+          <span className="ml-0.5 text-sm font-medium text-stone-500">ml</span>
+        </p>
+        <p className="mt-0.5 text-[10px] text-stone-400">오늘 {summary.feedingCount}회</p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-3.5 ring-1 ring-[#E8E2D9]">
+        <p className="text-xs font-medium text-stone-500">평균 수유량</p>
+        {averageDailyFeedingMl != null ? (
+          <>
+            <p className="mt-1.5 text-xl font-semibold text-stone-800">
+              {averageDailyFeedingMl}
+              <span className="ml-0.5 text-sm font-medium text-stone-500">ml</span>
+            </p>
+            <p className="mt-0.5 text-[10px] text-stone-400">
+              최근 7일 · 9회+ 먹은 날 기준
+            </p>
+          </>
+        ) : (
+          <p className="mt-1.5 text-xs leading-relaxed text-stone-500">
+            하루 9회 이상 먹은 날이 쌓이면 계산돼요.
+          </p>
+        )}
+      </div>
+
       <SummaryCard label="소변" value={summary.peeCount} unit="회" />
       <SummaryCard label="대변" value={summary.poopCount} unit="회" />
 

@@ -45,10 +45,13 @@ export function getTodaySummary(logs) {
 
   let totalMl = 0
   let totalBreastMinutes = 0
+  let feedingCount = 0
   let peeCount = 0
   let poopCount = 0
 
   todayLogs.forEach((log) => {
+    if (hasFeeding(log)) feedingCount += 1
+
     // 모유·젖병을 독립적으로 합산 (한 기록에 둘 다 있을 수 있음)
     totalBreastMinutes += breastMinutes(log)
     totalMl += log.feeding_amount_ml || 0
@@ -61,7 +64,7 @@ export function getTodaySummary(logs) {
     }
   })
 
-  return { totalMl, totalBreastMinutes, peeCount, poopCount }
+  return { totalMl, totalBreastMinutes, feedingCount, peeCount, poopCount }
 }
 
 export function getLastFeedingAt(logs) {
@@ -217,6 +220,25 @@ export function getFeedingHeatmap(logs, days = 7) {
   })
 
   return rows
+}
+
+/**
+ * 최근 days일 중 "하루치로 볼 만한" 날(수유 minFeedingCount회 이상)만 골라
+ * 하루 총 수유량(ml)의 평균을 낸다.
+ * 아직 진행 중인 오늘처럼 기록이 적은 날은 기준 미달로 자동 제외되어
+ * 평균이 낮게 왜곡되지 않는다. 기준을 만족하는 날이 하나도 없으면 null.
+ */
+export function getAverageDailyFeedingMl(
+  logs,
+  { days = 7, minFeedingCount = 9 } = {},
+) {
+  const qualifyingDays = getDailyFeedingTotals(logs, days).filter(
+    (day) => day.count >= minFeedingCount,
+  )
+  if (qualifyingDays.length === 0) return null
+
+  const totalMl = qualifyingDays.reduce((sum, day) => sum + day.ml, 0)
+  return Math.round(totalMl / qualifyingDays.length)
 }
 
 export function getWeightTrend(medicalLogs) {
