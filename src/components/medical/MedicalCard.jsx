@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import ChipButton from '@/components/quickLog/ChipButton'
 import { getDDayLabel } from '@/utils/dashboardStats'
 
@@ -12,7 +12,7 @@ function formatVisitDate(value) {
   })
 }
 
-function MedicalCard({ log, onToggleMedicine, onDelete, isBusy }) {
+function MedicalCard({ log, onToggleMedicine, onEdit, onDelete, isBusy }) {
   const dDay = log.is_upcoming ? getDDayLabel(log.visit_date) : null
 
   return (
@@ -33,23 +33,33 @@ function MedicalCard({ log, onToggleMedicine, onDelete, isBusy }) {
           >
             {formatVisitDate(log.visit_date)}
           </p>
-          <p className="mt-0.5 text-xs text-stone-500">
-            {[log.hospital_name, log.doctor_name].filter(Boolean).join(' · ') ||
-              '병원 정보 없음'}
+          <p className="mt-0.5 text-xs break-keep text-stone-500">
+            {[log.hospital_name, log.department, log.doctor_name]
+              .filter(Boolean)
+              .join(' · ') || '병원 정보 없음'}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {dDay && (
-            <span className="rounded-lg bg-[#E6F4EA] px-2 py-1 text-xs font-semibold text-[#2F6B45]">
+            <span className="shrink-0 whitespace-nowrap rounded-lg bg-[#E6F4EA] px-2 py-1 text-xs font-semibold text-[#2F6B45]">
               {dDay}
             </span>
           )}
           <button
             type="button"
+            aria-label="수정"
+            disabled={isBusy}
+            onClick={() => onEdit(log)}
+            className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-xl text-stone-500 hover:bg-[#E6F4EA] hover:text-[#2F6B45] disabled:opacity-50"
+          >
+            <Pencil size={18} />
+          </button>
+          <button
+            type="button"
             aria-label="삭제"
             disabled={isBusy}
             onClick={() => onDelete(log)}
-            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-stone-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+            className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-xl text-stone-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
           >
             <Trash2 size={18} />
           </button>

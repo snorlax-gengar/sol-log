@@ -68,6 +68,7 @@ CREATE TABLE medical_logs (
     child_id UUID REFERENCES children(id) ON DELETE CASCADE,
     visit_date TIMESTAMP WITH TIME ZONE NOT NULL, -- 진료/예약 일시
     hospital_name VARCHAR(100),
+    department VARCHAR(50), -- 진료과 (예: 소아청소년과)
     doctor_name VARCHAR(50),
     symptoms TEXT, -- 증상
     diagnosis TEXT, -- 진료 내용 및 처방

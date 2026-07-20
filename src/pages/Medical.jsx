@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import MedicalForm from '@/components/medical/MedicalForm'
 import MedicalCard from '@/components/medical/MedicalCard'
 import ChipButton from '@/components/quickLog/ChipButton'
@@ -6,6 +6,8 @@ import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
 
 function Medical() {
   const [tab, setTab] = useState('records')
+  const [editingLog, setEditingLog] = useState(null)
+  const formRef = useRef(null)
   const {
     logs,
     isLoading,
@@ -30,12 +32,24 @@ function Medical() {
     const confirmed = window.confirm('이 기록을 삭제할까요?')
     if (!confirmed) return
     await deleteMedicalLog(log.id)
+    if (editingLog?.id === log.id) setEditingLog(null)
   }
 
   const handleToggleMedicine = async (log) => {
     await updateMedicalLog(log.id, {
       medicine_checked: !log.medicine_checked,
     })
+  }
+
+  const handleEdit = (log) => {
+    setEditingLog(log)
+    // 폼은 화면 상단에 있으므로, 수정 시작 시 폼이 보이도록 스크롤
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleSaveEdit = async (patch) => {
+    const result = await updateMedicalLog(editingLog.id, patch)
+    return result
   }
 
   return (
@@ -47,29 +61,36 @@ function Medical() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <ChipButton
-          selected={tab === 'records'}
-          onClick={() => setTab('records')}
-          className="w-full"
-        >
-          진료 기록
-        </ChipButton>
-        <ChipButton
-          selected={tab === 'upcoming'}
-          onClick={() => setTab('upcoming')}
-          className="w-full"
-        >
-          예약/접종
-        </ChipButton>
-      </div>
+      {!editingLog && (
+        <div className="grid grid-cols-2 gap-2">
+          <ChipButton
+            selected={tab === 'records'}
+            onClick={() => setTab('records')}
+            className="w-full"
+          >
+            진료 기록
+          </ChipButton>
+          <ChipButton
+            selected={tab === 'upcoming'}
+            onClick={() => setTab('upcoming')}
+            className="w-full"
+          >
+            예약/접종
+          </ChipButton>
+        </div>
+      )}
 
-      <MedicalForm
-        key={tab}
-        isUpcoming={tab === 'upcoming'}
-        isSaving={isSaving}
-        onSubmit={insertMedicalLog}
-      />
+      <div ref={formRef}>
+        <MedicalForm
+          key={editingLog?.id ?? tab}
+          isUpcoming={tab === 'upcoming'}
+          isSaving={isSaving}
+          onSubmit={insertMedicalLog}
+          editingLog={editingLog}
+          onSave={handleSaveEdit}
+          onCancelEdit={() => setEditingLog(null)}
+        />
+      </div>
 
       {error && (
         <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
@@ -96,6 +117,7 @@ function Medical() {
                 isBusy={isSaving}
                 onDelete={handleDelete}
                 onToggleMedicine={handleToggleMedicine}
+                onEdit={handleEdit}
               />
             </li>
           ))}

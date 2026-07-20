@@ -3,11 +3,37 @@ import ChipButton from '@/components/quickLog/ChipButton'
 import TimePicker from '@/components/quickLog/TimePicker'
 import { UPCOMING_PURPOSE_PRESETS } from '@/constants/medical'
 
-function createInitialForm(isUpcoming) {
+// 새로 추가할 때는 탭(isUpcoming)을 기준으로, 기존 기록을 수정할 때는
+// 그 기록 고유의 종류(editingLog.is_upcoming)를 기준으로 초기값을 만든다.
+// (수정 중에는 페이지 상단 탭을 눌러도 폼 종류가 바뀌면 안 되므로 분리)
+function createInitialForm(isUpcoming, editingLog) {
+  if (editingLog) {
+    return {
+      visitDate: new Date(editingLog.visit_date),
+      purpose: editingLog.is_upcoming ? editingLog.diagnosis || '' : '',
+      hospitalName: editingLog.hospital_name || '',
+      department: editingLog.department || '',
+      doctorName: editingLog.doctor_name || '',
+      symptoms: editingLog.symptoms || '',
+      diagnosis: editingLog.is_upcoming ? '' : editingLog.diagnosis || '',
+      babyWeightKg:
+        editingLog.baby_weight_kg != null
+          ? String(editingLog.baby_weight_kg)
+          : '',
+      babyHeightCm:
+        editingLog.baby_height_cm != null
+          ? String(editingLog.baby_height_cm)
+          : '',
+      isUpcoming: Boolean(editingLog.is_upcoming),
+      medicineChecked: Boolean(editingLog.medicine_checked),
+    }
+  }
+
   return {
     visitDate: new Date(),
     purpose: '', // 예약/접종 일정 내용 (diagnosis 컬럼에 저장)
     hospitalName: '',
+    department: '',
     doctorName: '',
     symptoms: '',
     diagnosis: '',
@@ -18,9 +44,21 @@ function createInitialForm(isUpcoming) {
   }
 }
 
-function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
-  const [form, setForm] = useState(() => createInitialForm(isUpcoming))
+function MedicalForm({
+  isUpcoming,
+  onSubmit,
+  isSaving,
+  editingLog = null,
+  onSave,
+  onCancelEdit,
+}) {
+  const [form, setForm] = useState(() =>
+    createInitialForm(isUpcoming, editingLog),
+  )
   const [error, setError] = useState('')
+
+  // 수정 중인 기록 자체의 종류를 기준으로 필드를 보여준다 (상단 탭과 무관)
+  const formIsUpcoming = form.isUpcoming
 
   const updateForm = (patch) => {
     setForm((prev) => ({ ...prev, ...patch }))
@@ -35,7 +73,7 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
       return
     }
 
-    if (isUpcoming && !form.purpose.trim()) {
+    if (formIsUpcoming && !form.purpose.trim()) {
       setError('무슨 일정인지 선택하거나 입력해주세요. (예: BCG 접종)')
       return
     }
@@ -54,9 +92,39 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
       return
     }
 
+    if (editingLog) {
+      const patch = {
+        visit_date: form.visitDate.toISOString(),
+        hospital_name: form.hospitalName.trim() || null,
+        department: form.department.trim() || null,
+        doctor_name: form.doctorName.trim() || null,
+        symptoms: formIsUpcoming
+          ? editingLog.symptoms
+          : form.symptoms.trim() || null,
+        // 예약/접종은 일정 내용을 diagnosis 컬럼에 저장
+        diagnosis: formIsUpcoming
+          ? form.purpose.trim()
+          : form.diagnosis.trim() || null,
+        baby_weight_kg: weight,
+        baby_height_cm: height,
+        medicine_checked: formIsUpcoming
+          ? editingLog.medicine_checked
+          : form.medicineChecked,
+      }
+
+      const result = await onSave(patch)
+      if (!result?.error) {
+        onCancelEdit?.()
+      } else {
+        setError(result.error)
+      }
+      return
+    }
+
     const result = await onSubmit({
       visitDate: form.visitDate,
       hospitalName: form.hospitalName.trim(),
+      department: form.department.trim(),
       doctorName: form.doctorName.trim(),
       symptoms: form.symptoms.trim(),
       // 예약/접종은 일정 내용을 diagnosis 컬럼에 저장
@@ -80,19 +148,25 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
       className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-[#E8E2D9]"
     >
       <h2 className="text-sm font-semibold text-stone-800">
-        {isUpcoming ? '예약/접종 추가' : '진료 기록 추가'}
+        {editingLog
+          ? formIsUpcoming
+            ? '예약/접종 수정'
+            : '진료 기록 수정'
+          : isUpcoming
+            ? '예약/접종 추가'
+            : '진료 기록 추가'}
       </h2>
 
       <TimePicker
-        title={isUpcoming ? '언제 예약인가요?' : '언제 다녀왔나요?'}
+        title={formIsUpcoming ? '언제 예약인가요?' : '언제 다녀왔나요?'}
         value={form.visitDate}
         onChange={(visitDate) => updateForm({ visitDate })}
-        allowFuture={isUpcoming}
-        pastDays={isUpcoming ? 0 : 60}
+        allowFuture={formIsUpcoming}
+        pastDays={formIsUpcoming ? 0 : 60}
         futureDays={180}
       />
 
-      {isUpcoming && (
+      {formIsUpcoming && (
         <div>
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-stone-500">
@@ -121,22 +195,35 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
         </div>
       )}
 
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-medium text-stone-500">
+          병원명
+        </span>
+        <input
+          type="text"
+          value={form.hospitalName}
+          onChange={(e) => updateForm({ hospitalName: e.target.value })}
+          placeholder="OO소아청소년과의원"
+          className="min-h-12 w-full rounded-xl bg-[#FDFBF7] px-3 text-sm ring-1 ring-[#E8E2D9] outline-none focus:ring-2 focus:ring-[#3D8B5A]/40"
+        />
+      </label>
+
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-stone-500">
-            병원
+            진료과
           </span>
           <input
             type="text"
-            value={form.hospitalName}
-            onChange={(e) => updateForm({ hospitalName: e.target.value })}
-            placeholder="소아과"
+            value={form.department}
+            onChange={(e) => updateForm({ department: e.target.value })}
+            placeholder="소아청소년과"
             className="min-h-12 w-full rounded-xl bg-[#FDFBF7] px-3 text-sm ring-1 ring-[#E8E2D9] outline-none focus:ring-2 focus:ring-[#3D8B5A]/40"
           />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-stone-500">
-            의사
+            담당의
           </span>
           <input
             type="text"
@@ -148,7 +235,7 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
         </label>
       </div>
 
-      {!isUpcoming && (
+      {!formIsUpcoming && (
         <>
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-stone-500">
@@ -208,7 +295,7 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
         </label>
       </div>
 
-      {!isUpcoming && (
+      {!formIsUpcoming && (
         <ChipButton
           selected={form.medicineChecked}
           onClick={() =>
@@ -226,13 +313,24 @@ function MedicalForm({ isUpcoming, onSubmit, isSaving }) {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="min-h-12 w-full rounded-2xl bg-[#3D8B5A] text-sm font-semibold text-white disabled:opacity-60"
-      >
-        {isSaving ? '저장 중…' : '저장하기'}
-      </button>
+      <div className="flex gap-2">
+        {editingLog && (
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="min-h-12 flex-1 rounded-2xl bg-white text-sm font-semibold text-stone-600 ring-1 ring-[#E8E2D9]"
+          >
+            취소
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="min-h-12 flex-1 rounded-2xl bg-[#3D8B5A] text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {isSaving ? '저장 중…' : editingLog ? '수정 저장' : '저장하기'}
+        </button>
+      </div>
     </form>
   )
 }

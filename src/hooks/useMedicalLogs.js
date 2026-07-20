@@ -106,6 +106,7 @@ export function useMedicalLogs({ enableRealtime = false } = {}) {
           child_id: childId,
           visit_date: payload.visitDate.toISOString(),
           hospital_name: payload.hospitalName || null,
+          department: payload.department || null,
           doctor_name: payload.doctorName || null,
           symptoms: payload.symptoms || null,
           diagnosis: payload.diagnosis || null,
