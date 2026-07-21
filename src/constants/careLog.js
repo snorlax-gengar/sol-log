@@ -24,7 +24,7 @@ export const BOTTLE_ML_INPUT_TYPES = BOTTLE_ML_TYPES.filter(
 // 모유 수유 방식 — 용량(ml)은 기록하지 않고 방식만 구분한다.
 export const BREAST_TYPES = [
   { value: 'direct', label: '직수', emoji: '🤱' },
-  { value: 'pumped', label: '유축', emoji: '🍼' },
+  { value: 'pumped', label: '유축', emoji: '🤱' },
 ]
 
 // 칩 목록엔 '없음'을 두지 않는다 — 아무것도 선택하지 않은 상태 자체가
