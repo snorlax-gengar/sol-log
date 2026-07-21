@@ -28,7 +28,10 @@ function EditCareLogModal({ log, onClose, onSave, isSaving }) {
     if (form.loggedAt > new Date()) {
       return '기록 시간은 현재보다 미래일 수 없습니다.'
     }
-    const hasBreast = form.breastLeftMinutes > 0 || form.breastRightMinutes > 0
+    const hasBreast =
+      Boolean(form.breastType) ||
+      form.breastLeftMinutes > 0 ||
+      form.breastRightMinutes > 0
     const hasBottle =
       (form.formulaMl || 0) > 0 || (form.pumpedMl || 0) > 0 || (form.foodMl || 0) > 0
     if (!hasBreast && !hasBottle && form.diaperStatus === 'none') {
@@ -95,12 +98,19 @@ function EditCareLogModal({ log, onClose, onSave, isSaving }) {
             </p>
           )}
 
+          {form.pumpedMl > 0 && (
+            <p className="rounded-xl bg-[#F7F1E8] px-3 py-2.5 text-xs leading-relaxed text-stone-500">
+              🥛 유축 모유 {form.pumpedMl}ml (과거 기록 · 더 이상 입력 항목은 아니지만
+              이 값은 그대로 보존돼요)
+            </p>
+          )}
+
           <FeedingSection
+            breastType={form.breastType}
             formulaMl={form.formulaMl}
-            pumpedMl={form.pumpedMl}
             foodMl={form.foodMl}
+            onBreastTypeChange={(breastType) => updateForm({ breastType })}
             onFormulaMlChange={(formulaMl) => updateForm({ formulaMl })}
-            onPumpedMlChange={(pumpedMl) => updateForm({ pumpedMl })}
             onFoodMlChange={(foodMl) => updateForm({ foodMl })}
           />
 

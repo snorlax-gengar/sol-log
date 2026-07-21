@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { BOTTLE_ML_TYPES } from '@/constants/careLog'
+import { BOTTLE_ML_TYPES, BREAST_TYPES } from '@/constants/careLog'
 import {
   diaperStatusEmoji,
   diaperStatusLabel,
@@ -10,12 +10,19 @@ import { formatMinutesDuration } from '@/utils/dashboardStats'
 import { toLocalTimeValue } from '@/utils/dateTime'
 
 const BOTTLE_META = new Map(BOTTLE_ML_TYPES.map((item) => [item.value, item]))
+const BREAST_TYPE_META = new Map(BREAST_TYPES.map((item) => [item.value, item]))
 
-// 모유·젖병(분유/유축 모유/이유식)을 함께 표시 ("🤱 15분 · 🥛 유축 모유 8ml · 🍼 분유 70ml")
+// 모유·젖병(분유/이유식)을 함께 표시 ("🤱 직접수유 · 🍼 분유 70ml")
+// (레거시 기록은 "🤱 15분"처럼 분단위로, 과거 유축ml 기록은 "🥛 모유 8ml"로 그대로 표시)
 function feedingSummary(log) {
   const { breast, bottles } = feedingParts(log)
   const parts = []
-  if (breast) parts.push(`🤱 ${breast.minutes}분`)
+  if (breast?.type) {
+    const meta = BREAST_TYPE_META.get(breast.type)
+    parts.push(`${meta?.emoji ?? '🤱'} ${meta?.label ?? breast.type}`)
+  } else if (breast?.minutes) {
+    parts.push(`🤱 ${breast.minutes}분`)
+  }
   bottles?.forEach(({ type, ml }) => {
     const meta = BOTTLE_META.get(type)
     parts.push(`${meta?.emoji ?? '🍼'} ${meta?.label ?? type} ${ml}ml`)

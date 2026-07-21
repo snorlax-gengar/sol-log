@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BOTTLE_ML_TYPES } from '@/constants/careLog'
+import { BOTTLE_ML_TYPES, BREAST_TYPES } from '@/constants/careLog'
 import { formatMinutesDuration } from '@/utils/dashboardStats'
 import { toLocalTimeValue } from '@/utils/dateTime'
 
@@ -38,12 +38,18 @@ const KIND_LABEL = {
 }
 
 const BOTTLE_META = new Map(BOTTLE_ML_TYPES.map((item) => [item.value, item]))
+const BREAST_TYPE_META = new Map(BREAST_TYPES.map((item) => [item.value, item]))
 
-// 조각 상세 정보를 줄 단위 목록으로 분해 (예: ["🍼 분유 70ml", "🥛 모유 8ml"]).
+// 조각 상세 정보를 줄 단위 목록으로 분해 (예: ["🍼 분유 70ml", "🤱 직접수유"]).
 // 2개 이상이면 화면에서 "+"로 이어 각각 줄바꿈해 표시한다 (단어 중간에서 잘리지 않도록).
 function feedingDetailChunks(parts) {
   const chunks = []
-  if (parts?.breast) chunks.push(`직접 수유 ${parts.breast.minutes}분`)
+  if (parts?.breast?.type) {
+    const meta = BREAST_TYPE_META.get(parts.breast.type)
+    chunks.push(`${meta?.emoji ?? '🤱'} ${meta?.label ?? parts.breast.type}`)
+  } else if (parts?.breast?.minutes) {
+    chunks.push(`직접 수유 ${parts.breast.minutes}분`)
+  }
   parts?.bottles?.forEach((b) => {
     const meta = BOTTLE_META.get(b.type)
     chunks.push(`${meta?.emoji ?? '🍼'} ${meta?.label ?? b.type} ${b.ml}ml`)

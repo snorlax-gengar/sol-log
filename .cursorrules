@@ -27,10 +27,15 @@ CREATE TABLE care_logs (
     logged_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- 수유/기저귀 실제 수행 시점 (과거 시간 보정 가능)
     
     -- 수유 관련 데이터
-    feeding_type VARCHAR(20), -- 'breast'(모유), 'formula'(분유), 'pumped'(유축모유), 'food'(이유식), 'none'
-    feeding_amount_ml INT DEFAULT 0, -- 분유/유축/이유식 용량
-    breast_left_minutes INT DEFAULT 0, -- 모유 왼쪽 수유 시간
-    breast_right_minutes INT DEFAULT 0, -- 모유 오른쪽 수유 시간
+    feeding_type VARCHAR(20), -- 대표 종류(레거시 호환용): 'breast'/'formula'/'pumped'/'food'/'none'
+    feeding_amount_ml INT DEFAULT 0, -- 대표 총 용량(레거시 호환용, 분유+이유식 등 합)
+    bottle_type VARCHAR(20), -- 대표 젖병 종류(레거시 호환용, ml이 가장 큰 종류)
+    formula_ml INT, -- 분유 ml
+    pumped_ml INT, -- (레거시) 유축 모유 ml — 더 이상 입력 UI 없음, 과거 기록 표시/집계 호환용
+    food_ml INT, -- 이유식 ml
+    breast_type VARCHAR(10), -- 모유 수유 방식: 'direct'(직수) | 'pumped'(유축) — 용량은 기록하지 않음
+    breast_left_minutes INT DEFAULT 0, -- (레거시) 모유 왼쪽 수유 시간 — 더 이상 입력 UI 없음
+    breast_right_minutes INT DEFAULT 0, -- (레거시) 모유 오른쪽 수유 시간 — 더 이상 입력 UI 없음
     feeding_notes TEXT,
     
     -- 기저귀 관련 데이터

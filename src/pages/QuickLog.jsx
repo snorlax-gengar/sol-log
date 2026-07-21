@@ -19,8 +19,11 @@ function createInitialForm({ keepPreset = true } = {}) {
     // 직접 수유(분 단위) 입력 UI는 없앴지만, DB 컬럼 호환을 위해 0으로 유지
     breastLeftMinutes: 0,
     breastRightMinutes: 0,
+    // 모유는 용량이 아니라 방식(직접수유/유축/둘 다)만 기록
+    breastType: null,
     formulaMl: preset?.formulaMl ?? 0,
-    pumpedMl: preset?.pumpedMl ?? 0,
+    // 유축 모유 ml 입력 UI는 없앴지만, DB 컬럼 호환을 위해 0으로 유지
+    pumpedMl: 0,
     foodMl: preset?.foodMl ?? 0,
     diaperStatus: 'none',
     diaperPoopColor: null,
@@ -53,10 +56,10 @@ function QuickLog() {
       return '기록 시간은 현재보다 미래일 수 없습니다.'
     }
 
-    const hasBottle =
-      (form.formulaMl || 0) > 0 || (form.pumpedMl || 0) > 0 || (form.foodMl || 0) > 0
+    const hasBottle = (form.formulaMl || 0) > 0 || (form.foodMl || 0) > 0
+    const hasBreast = Boolean(form.breastType)
 
-    if (!hasBottle && form.diaperStatus === 'none') {
+    if (!hasBottle && !hasBreast && form.diaperStatus === 'none') {
       return '수유 또는 기저귀 중 하나 이상 입력해주세요.'
     }
 
@@ -112,11 +115,11 @@ function QuickLog() {
       />
 
       <FeedingSection
+        breastType={form.breastType}
         formulaMl={form.formulaMl}
-        pumpedMl={form.pumpedMl}
         foodMl={form.foodMl}
+        onBreastTypeChange={(breastType) => updateForm({ breastType })}
         onFormulaMlChange={(formulaMl) => updateForm({ formulaMl })}
-        onPumpedMlChange={(pumpedMl) => updateForm({ pumpedMl })}
         onFoodMlChange={(foodMl) => updateForm({ foodMl })}
       />
 

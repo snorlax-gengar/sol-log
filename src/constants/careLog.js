@@ -7,11 +7,24 @@ export const FEEDING_TYPES = [
 ]
 
 // 젖병(모유가 아닌 용량 수유) 종류 — 각각 독립적인 ml 입력칸으로 동시에 기록 가능
-// (예: 모유 8ml + 분유 70ml 처럼 한 기록에 함께)
+// 'pumped'(유축 모유 ml)는 과거 기록 표시/집계 호환용으로 남겨두고,
+// 입력 폼에는 더 이상 노출하지 않는다 (BOTTLE_ML_INPUT_TYPES 참고).
+// 모유는 이제 용량이 아니라 방식(직수/유축)만 BREAST_TYPES로 구분해서 기록한다.
 export const BOTTLE_ML_TYPES = [
   { value: 'formula', label: '분유', emoji: '🍼' },
   { value: 'pumped', label: '모유', emoji: '🥛' },
   { value: 'food', label: '이유식', emoji: '🥣' },
+]
+
+// 입력 폼에 실제로 보여줄 ml 항목 (모유 유축 ml은 더 이상 입력받지 않음)
+export const BOTTLE_ML_INPUT_TYPES = BOTTLE_ML_TYPES.filter(
+  (item) => item.value !== 'pumped',
+)
+
+// 모유 수유 방식 — 용량(ml)은 기록하지 않고 방식만 구분한다.
+export const BREAST_TYPES = [
+  { value: 'direct', label: '직수', emoji: '🤱' },
+  { value: 'pumped', label: '유축', emoji: '🍼' },
 ]
 
 // 칩 목록엔 '없음'을 두지 않는다 — 아무것도 선택하지 않은 상태 자체가

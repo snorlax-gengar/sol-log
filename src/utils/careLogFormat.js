@@ -77,18 +77,27 @@ export function bottleAmounts(log) {
 
 /**
  * 한 기록의 수유 구성 요소를 분해.
- * { breast: {minutes} | null, bottles: [{type, ml}, ...] | null }
+ * { breast: {type} | {minutes} | null, bottles: [{type, ml}, ...] | null }
+ * breast_type(직수/유축)이 있으면 그것을 우선하고,
+ * 없으면 레거시 분단위 기록(breast_left/right_minutes)으로 폴백한다.
  */
 export function feedingParts(log) {
-  const min = breastMinutes(log)
   const amounts = bottleAmounts(log)
   const bottles = BOTTLE_ML_TYPES.map((item) => ({
     type: item.value,
     ml: amounts[item.value] || 0,
   })).filter((b) => b.ml > 0)
 
+  let breast = null
+  if (log.breast_type) {
+    breast = { type: log.breast_type }
+  } else {
+    const min = breastMinutes(log)
+    if (min > 0) breast = { minutes: min }
+  }
+
   return {
-    breast: min > 0 ? { minutes: min } : null,
+    breast,
     bottles: bottles.length > 0 ? bottles : null,
   }
 }
@@ -108,6 +117,7 @@ export function logToForm(log) {
     loggedAt: new Date(log.logged_at),
     breastLeftMinutes: log.breast_left_minutes || 0,
     breastRightMinutes: log.breast_right_minutes || 0,
+    breastType: log.breast_type || null,
     formulaMl: amounts.formula || 0,
     pumpedMl: amounts.pumped || 0,
     foodMl: amounts.food || 0,
@@ -119,9 +129,14 @@ export function logToForm(log) {
 }
 
 export function formToDbPayload(form) {
-  const hasBreast =
+  // 레거시 분단위 직접수유 기록 (입력 UI는 없지만, 기존 값은 그대로 보존해서 되돌려 씀)
+  const hasLegacyBreastMinutes =
     (form.breastLeftMinutes || 0) + (form.breastRightMinutes || 0) > 0
+  // 모유는 이제 breastType(직수/유축)으로만 기록한다 (용량 없음)
+  const hasBreast = Boolean(form.breastType) || hasLegacyBreastMinutes
+
   const formulaMl = form.formulaMl || 0
+  // pumped_ml: 입력 UI는 없지만, 과거 유축 모유 ml 기록은 그대로 보존해서 되돌려 씀
   const pumpedMl = form.pumpedMl || 0
   const foodMl = form.foodMl || 0
   const totalBottleMl = formulaMl + pumpedMl + foodMl
@@ -145,8 +160,9 @@ export function formToDbPayload(form) {
     formula_ml: formulaMl,
     pumped_ml: pumpedMl,
     food_ml: foodMl,
-    breast_left_minutes: hasBreast ? form.breastLeftMinutes : 0,
-    breast_right_minutes: hasBreast ? form.breastRightMinutes : 0,
+    breast_type: form.breastType || null,
+    breast_left_minutes: hasLegacyBreastMinutes ? form.breastLeftMinutes : 0,
+    breast_right_minutes: hasLegacyBreastMinutes ? form.breastRightMinutes : 0,
     diaper_status: form.diaperStatus,
     diaper_poop_color: form.diaperPoopColor,
     diaper_poop_texture: form.diaperPoopTexture,
