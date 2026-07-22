@@ -11,6 +11,7 @@ const REPEAT_MS = 15 * 60 * 1000 // 재알림 간격 15분
 const MAX_ALERTS = 4 // 수유 1건당 최대 알림 횟수
 const TICK_MS = 30000
 const ENABLED_KEY = 'sol-log:feeding-alarm-enabled'
+const ALERT_STATE_KEY = 'sol-log:feeding-alarm-state'
 
 function loadEnabled() {
   try {
@@ -28,22 +29,66 @@ function saveEnabled(enabled) {
   }
 }
 
+function loadAlertState() {
+  try {
+    const raw = window.localStorage.getItem(ALERT_STATE_KEY)
+    if (!raw) return { key: null, count: 0, lastAt: 0 }
+    const parsed = JSON.parse(raw)
+    return {
+      key: parsed?.key ?? null,
+      count: Number(parsed?.count) || 0,
+      lastAt: Number(parsed?.lastAt) || 0,
+    }
+  } catch {
+    return { key: null, count: 0, lastAt: 0 }
+  }
+}
+
+function saveAlertState(state) {
+  try {
+    window.localStorage.setItem(
+      ALERT_STATE_KEY,
+      JSON.stringify({
+        key: state.key,
+        count: state.count,
+        lastAt: state.lastAt,
+      }),
+    )
+  } catch {
+    // 무시
+  }
+}
+
 function notificationPermission() {
   if (typeof Notification === 'undefined') return 'unsupported'
   return Notification.permission
 }
 
+async function hasActivePushSubscription() {
+  if (!isPushSupported()) return false
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.getSubscription()
+    return Boolean(subscription)
+  } catch {
+    return false
+  }
+}
+
 /**
  * 수유 텀 기반 웹 알람.
  * - 기록이 들어올 때마다(Realtime 포함) 최근 텀 평균으로 다음 수유 예상 시각을 재계산
- * - 예상 시각이 지나면 시스템 알림(가능 시) + onAlarm 콜백(토스트), 15분 간격 재알림
- * - 새 수유가 기록되면 알람 사이클이 자동 리셋
+ * - 서버 Web Push 구독 중이면 OS 알림은 서버(cron)만 담당 → 접속 시 중복 방지
+ * - 앱이 열려 있을 때는 인앱 토스트만 (서버 푸시와 역할 분리)
+ * - 푸시 미구독/미지원일 때만 클라이언트가 OS 알림 폴백
  */
 export function useFeedingAlarm(logs, { onAlarm } = {}) {
   const [enabled, setEnabled] = useState(loadEnabled)
   const [permission, setPermission] = useState(notificationPermission)
   const [now, setNow] = useState(() => Date.now())
-  const alertStateRef = useRef({ key: null, count: 0, lastAt: 0 })
+  const [serverPushActive, setServerPushActive] = useState(false)
+  const [pushStatusKnown, setPushStatusKnown] = useState(() => !isPushSupported())
+  const alertStateRef = useRef(loadAlertState())
   const onAlarmRef = useRef(onAlarm)
   onAlarmRef.current = onAlarm
 
@@ -75,13 +120,41 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
     return () => clearInterval(timer)
   }, [enabled])
 
+  // 서버 푸시 구독 여부 동기화 (중복 OS 알림 방지용)
+  useEffect(() => {
+    let cancelled = false
+    if (!enabled) {
+      setServerPushActive(false)
+      setPushStatusKnown(true)
+      return undefined
+    }
+    if (!isPushSupported()) {
+      setServerPushActive(false)
+      setPushStatusKnown(true)
+      return undefined
+    }
+
+    setPushStatusKnown(false)
+    hasActivePushSubscription().then((active) => {
+      if (cancelled) return
+      setServerPushActive(active)
+      setPushStatusKnown(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled])
+
   // 알람 발화
   useEffect(() => {
     if (!enabled || !dueAtMs || !lastFeeding) return
+    // 푸시 구독 여부 확인 전에는 OS 알림을 쏘지 않음 (접속 직후 중복 방지)
+    if (!pushStatusKnown) return
 
     // 새 수유가 기록되면 사이클 리셋
     if (alertStateRef.current.key !== lastFeeding.id) {
       alertStateRef.current = { key: lastFeeding.id, count: 0, lastAt: 0 }
+      saveAlertState(alertStateRef.current)
     }
 
     const state = alertStateRef.current
@@ -91,6 +164,7 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
 
     state.count += 1
     state.lastAt = now
+    saveAlertState(state)
 
     const overdueMinutes = Math.floor((now - dueAtMs) / 60000)
     const message =
@@ -98,16 +172,24 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
         ? '수유 시간이 되었어요.'
         : `수유 예상 시간이 ${overdueMinutes}분 지났어요.`
 
-    // 서비스워커 경로로 시스템 알림 시도 (설치형 PWA/iOS 포함)
-    showSystemNotification({
-      title: '솔로그 수유 알람',
-      body: message,
-      tag: `sol-log-feeding-${lastFeeding.id}`, // 같은 사이클은 알림 갱신
-    })
+    const appVisible =
+      typeof document === 'undefined' || document.visibilityState === 'visible'
 
-    // 앱이 열려 있으면 인앱 토스트도 함께
-    onAlarmRef.current?.(message)
-  }, [now, enabled, dueAtMs, lastFeeding])
+    // 서버 Web Push가 활성이면 OS 알림은 cron/SW가 담당.
+    // 클라이언트가 다시 showNotification 하면 "접속할 때마다" 중복된다.
+    if (!serverPushActive) {
+      showSystemNotification({
+        title: '솔로그 수유 알람',
+        body: message,
+        tag: `sol-log-feeding-${lastFeeding.id}`,
+      })
+    }
+
+    // 앱이 보이는 동안에만 인앱 토스트 (백그라운드 OS 알림과 역할 분리)
+    if (appVisible) {
+      onAlarmRef.current?.(message)
+    }
+  }, [now, enabled, dueAtMs, lastFeeding, serverPushActive, pushStatusKnown])
 
   const [pushError, setPushError] = useState(null)
 
@@ -129,13 +211,21 @@ export function useFeedingAlarm(logs, { onAlarm } = {}) {
       // 권한이 있으면 서버 푸시 구독 (앱을 꺼도 알람이 오게)
       if (current === 'granted' && isPushSupported()) {
         const { error } = await subscribeToPush()
-        if (error) setPushError(error)
+        if (error) {
+          setPushError(error)
+          setServerPushActive(false)
+        } else {
+          setServerPushActive(await hasActivePushSubscription())
+        }
+      } else {
+        setServerPushActive(false)
       }
     } else {
       setPermission(notificationPermission())
       if (isPushSupported()) {
         await unsubscribeFromPush()
       }
+      setServerPushActive(false)
     }
 
     // 시스템 알림 권한이 없어도 인앱 토스트 알람은 동작하므로 켜는 것 허용

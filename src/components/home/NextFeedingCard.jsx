@@ -91,7 +91,7 @@ function NextFeedingCard({ alarm }) {
       {enabled && (
         <p className="mt-2 text-[11px] text-stone-400">
           {pushSupported && !pushError
-            ? '앱을 꺼도 수유 예상 시각에 알림이 와요. 새 수유를 기록하면 자동으로 리셋됩니다.'
+            ? '앱을 꺼도 서버 푸시로 알려드려요. 앱을 열면 시스템 알림은 다시 울리지 않고, 필요할 때만 앱 안 안내를 보여요.'
             : '앱이 열려 있는 동안 동작하며, 시간이 지나면 15분 간격으로 다시 알려드려요.'}
         </p>
       )}
