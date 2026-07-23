@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Pencil, Trash2 } from 'lucide-react'
 import ChipButton from '@/components/quickLog/ChipButton'
 import { getDDayLabel } from '@/utils/dashboardStats'
 
@@ -12,8 +12,17 @@ function formatVisitDate(value) {
   })
 }
 
-function MedicalCard({ log, onToggleMedicine, onEdit, onDelete, isBusy }) {
+function MedicalCard({
+  log,
+  onToggleMedicine,
+  onEdit,
+  onDelete,
+  onPromote,
+  isBusy,
+}) {
   const dDay = log.is_upcoming ? getDDayLabel(log.visit_date) : null
+  const isDue =
+    log.is_upcoming && new Date(log.visit_date).getTime() <= Date.now()
 
   return (
     <article className="rounded-2xl bg-white p-4 ring-1 ring-[#E8E2D9]">
@@ -41,8 +50,14 @@ function MedicalCard({ log, onToggleMedicine, onEdit, onDelete, isBusy }) {
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {dDay && (
-            <span className="shrink-0 whitespace-nowrap rounded-lg bg-[#E6F4EA] px-2 py-1 text-xs font-semibold text-[#2F6B45]">
-              {dDay}
+            <span
+              className={`shrink-0 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-semibold ${
+                isDue
+                  ? 'bg-[#F7E8D8] text-[#B4552D]'
+                  : 'bg-[#E6F4EA] text-[#2F6B45]'
+              }`}
+            >
+              {isDue ? '방문 예정 지남' : dDay}
             </span>
           )}
           <button
@@ -74,17 +89,43 @@ function MedicalCard({ log, onToggleMedicine, onEdit, onDelete, isBusy }) {
         </p>
       )}
 
-      {log.symptoms && (
-        <p className="text-sm text-stone-600">
-          <span className="font-medium text-stone-700">증상 </span>
-          {log.symptoms}
-        </p>
+      {(log.symptoms || (!log.is_upcoming && log.diagnosis)) && (
+        <div className="mt-2 space-y-2">
+          {log.symptoms && (
+            <div className="rounded-xl bg-[#F7F3EC] px-3 py-2.5">
+              <p className="text-[11px] font-bold tracking-wide text-[#8A7A66]">
+                증상
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-700">
+                {log.symptoms}
+              </p>
+            </div>
+          )}
+          {!log.is_upcoming && log.diagnosis && (
+            <div className="rounded-xl bg-[#E6F4EA] px-3 py-2.5">
+              <p className="text-[11px] font-bold tracking-wide text-[#2F6B45]">
+                진료
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-stone-700">
+                {log.diagnosis}
+              </p>
+            </div>
+          )}
+        </div>
       )}
-      {!log.is_upcoming && log.diagnosis && (
-        <p className="mt-1 text-sm text-stone-600">
-          <span className="font-medium text-stone-700">진료 </span>
-          {log.diagnosis}
-        </p>
+
+      {log.is_upcoming && onPromote && (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => onPromote(log)}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#E6F4EA] text-sm font-semibold text-[#2F6B45] transition-colors hover:bg-[#d8ecdf] disabled:opacity-50"
+          >
+            <ArrowRightLeft size={16} />
+            {isDue ? '진료 기록으로 옮기기' : '진료 완료 · 기록으로 옮기기'}
+          </button>
+        </div>
       )}
 
       {!log.is_upcoming && (

@@ -183,6 +183,56 @@ export function useMedicalLogs({ enableRealtime = false } = {}) {
     }
   }, [])
 
+  /** 예약을 진료 기록 탭으로 옮긴다 (is_upcoming=false). */
+  const promoteToRecord = useCallback(async (id) => {
+    return updateMedicalLog(id, { is_upcoming: false })
+  }, [updateMedicalLog])
+
+  /**
+   * 방문 시각이 지난 예약을 일괄로 진료 기록으로 옮긴다.
+   * @returns {{ moved: number, error: string | null }}
+   */
+  const promoteDueAppointments = useCallback(
+    async (sourceLogs = logs) => {
+      const now = Date.now()
+      const dueIds = sourceLogs
+        .filter(
+          (log) =>
+            Boolean(log.is_upcoming) && new Date(log.visit_date).getTime() <= now,
+        )
+        .map((log) => log.id)
+
+      if (dueIds.length === 0) return { moved: 0, error: null }
+
+      setIsSaving(true)
+      setError(null)
+      try {
+        const { data, error: updateError } = await supabase
+          .from('medical_logs')
+          .update({ is_upcoming: false })
+          .in('id', dueIds)
+          .select()
+
+        if (updateError) throw updateError
+
+        const updatedById = new Map((data || []).map((row) => [row.id, row]))
+        setLogs((prev) =>
+          sortByVisitDateDesc(
+            prev.map((log) => updatedById.get(log.id) || log),
+          ),
+        )
+        return { moved: dueIds.length, error: null }
+      } catch (err) {
+        const message = err?.message || '예약 → 진료 이동에 실패했습니다.'
+        setError(message)
+        return { moved: 0, error: message }
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [logs],
+  )
+
   return {
     logs,
     isLoading,
@@ -193,5 +243,7 @@ export function useMedicalLogs({ enableRealtime = false } = {}) {
     insertMedicalLog,
     updateMedicalLog,
     deleteMedicalLog,
+    promoteToRecord,
+    promoteDueAppointments,
   }
 }

@@ -1,13 +1,18 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import MedicalForm from '@/components/medical/MedicalForm'
 import MedicalCard from '@/components/medical/MedicalCard'
 import ChipButton from '@/components/quickLog/ChipButton'
 import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
+import { useToast } from '@/components/ui/ToastProvider'
+
+const AUTO_PROMOTE_INTERVAL_MS = 60_000
 
 function Medical() {
   const [tab, setTab] = useState('records')
   const [editingLog, setEditingLog] = useState(null)
   const formRef = useRef(null)
+  const promotingRef = useRef(false)
+  const { showToast } = useToast()
   const {
     logs,
     isLoading,
@@ -16,7 +21,19 @@ function Medical() {
     insertMedicalLog,
     updateMedicalLog,
     deleteMedicalLog,
+    promoteToRecord,
+    promoteDueAppointments,
   } = useMedicalLogsContext()
+
+  const dueUpcomingCount = useMemo(
+    () =>
+      logs.filter(
+        (log) =>
+          Boolean(log.is_upcoming) &&
+          new Date(log.visit_date).getTime() <= Date.now(),
+      ).length,
+    [logs],
+  )
 
   const filteredLogs = useMemo(() => {
     const isUpcomingTab = tab === 'upcoming'
@@ -27,6 +44,45 @@ function Medical() {
         return isUpcomingTab ? diff : -diff
       })
   }, [logs, tab])
+
+  // 방문 시각이 지난 예약 → 진료 기록 자동 이동
+  useEffect(() => {
+    let cancelled = false
+
+    const run = async () => {
+      if (promotingRef.current || isLoading) return
+      const due = logs.filter(
+        (log) =>
+          Boolean(log.is_upcoming) &&
+          new Date(log.visit_date).getTime() <= Date.now(),
+      )
+      if (due.length === 0) return
+
+      promotingRef.current = true
+      const { moved, error: promoteError } = await promoteDueAppointments(logs)
+      promotingRef.current = false
+      if (cancelled || promoteError || moved === 0) return
+
+      showToast(
+        moved === 1
+          ? '지난 예약을 진료 기록으로 옮겼어요.'
+          : `지난 예약 ${moved}건을 진료 기록으로 옮겼어요.`,
+      )
+    }
+
+    run()
+    const timer = setInterval(run, AUTO_PROMOTE_INTERVAL_MS)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') run()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [logs, isLoading, promoteDueAppointments, showToast])
 
   const handleDelete = async (log) => {
     const confirmed = window.confirm('이 기록을 삭제할까요?')
@@ -39,6 +95,22 @@ function Medical() {
     await updateMedicalLog(log.id, {
       medicine_checked: !log.medicine_checked,
     })
+  }
+
+  const handlePromote = async (log) => {
+    const label = log.diagnosis || '이 예약'
+    const confirmed = window.confirm(
+      `「${label}」을(를) 진료 기록 탭으로 옮길까요?`,
+    )
+    if (!confirmed) return
+
+    const { error: promoteError } = await promoteToRecord(log.id)
+    if (promoteError) {
+      showToast(promoteError, 'error')
+      return
+    }
+    showToast('진료 기록으로 옮겼어요.')
+    setTab('records')
   }
 
   const handleEdit = (log) => {
@@ -76,8 +148,20 @@ function Medical() {
             className="w-full"
           >
             예약/접종
+            {dueUpcomingCount > 0 && (
+              <span className="ml-1 rounded-md bg-[#B4552D] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {dueUpcomingCount}
+              </span>
+            )}
           </ChipButton>
         </div>
+      )}
+
+      {tab === 'upcoming' && dueUpcomingCount > 0 && !editingLog && (
+        <p className="rounded-xl bg-[#F7E8D8] px-3 py-2.5 text-xs leading-relaxed text-[#8A4A2A]">
+          방문 시각이 지난 예약 {dueUpcomingCount}건은 자동으로 진료 기록으로
+          옮겨져요. 카드의 버튼으로 직접 옮길 수도 있어요.
+        </p>
       )}
 
       <div ref={formRef}>
@@ -118,6 +202,7 @@ function Medical() {
                 onDelete={handleDelete}
                 onToggleMedicine={handleToggleMedicine}
                 onEdit={handleEdit}
+                onPromote={handlePromote}
               />
             </li>
           ))}
