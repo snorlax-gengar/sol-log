@@ -8,6 +8,7 @@ import { ChildProvider } from '@/context/ChildContext'
 import { CareLogsProvider } from '@/context/CareLogsContext'
 import { MedicalLogsProvider } from '@/context/MedicalLogsContext'
 import { FeedingAlarmProvider } from '@/context/FeedingAlarmContext'
+import { HomeVisibilityProvider } from '@/context/HomeVisibilityContext'
 import Login from '@/pages/Login'
 import Home from '@/pages/Home'
 import QuickLog from '@/pages/QuickLog'
@@ -78,15 +79,17 @@ function AuthedApp() {
   const ActiveView = TAB_VIEWS[safeTab]
 
   const shell = (
-    <AppShell
-      activeTab={safeTab}
-      onTabChange={setActiveTab}
-      visibleTabs={visibleTabs}
-      userLabel={displayName}
-      onSignOut={signOut}
-    >
-      <ActiveView />
-    </AppShell>
+    <HomeVisibilityProvider>
+      <AppShell
+        activeTab={safeTab}
+        onTabChange={setActiveTab}
+        visibleTabs={visibleTabs}
+        userLabel={displayName}
+        onSignOut={signOut}
+      >
+        <ActiveView />
+      </AppShell>
+    </HomeVisibilityProvider>
   )
 
   // 부모 계정만 기록/알람 사용 (자녀는 기록 접근 권한 없음).

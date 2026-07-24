@@ -1,13 +1,48 @@
 import { useState } from 'react'
-import { Download, KeyRound, LogOut, X } from 'lucide-react'
+import { Download, KeyRound, LayoutGrid, LogOut, X } from 'lucide-react'
 import Copyright from '@/components/ui/Copyright'
 import { useAuth } from '@/context/AuthContext'
+import { useHomeVisibility } from '@/context/HomeVisibilityContext'
 import { useToast } from '@/components/ui/ToastProvider'
 import { exportAllData } from '@/utils/exportData'
+import { HOME_VISIBILITY_OPTIONS } from '@/utils/homeVisibility'
+
+function ToggleRow({ label, description, checked, onChange }) {
+  return (
+    <div className="flex min-h-12 items-center gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-[#E8E2D9]">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-stone-800">{label}</p>
+        {description && (
+          <p className="mt-0.5 text-[11px] leading-snug text-stone-400">
+            {description}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+          checked ? 'bg-[#3D8B5A]' : 'bg-stone-300'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
 
 function AccountModal({ onClose }) {
-  const { displayName, changePassword, signOut } = useAuth()
+  const { displayName, role, changePassword, signOut } = useAuth()
+  const { visibility, setVisible, resetToDefault } = useHomeVisibility()
   const { showToast } = useToast()
+  const isParent = role === 'parent'
 
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -61,7 +96,7 @@ function AccountModal({ onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="계정 설정"
-        className="w-full max-w-[390px] rounded-t-3xl bg-[#FDFBF7] p-5 shadow-xl sm:rounded-3xl"
+        className="max-h-[90dvh] w-full max-w-[390px] overflow-y-auto rounded-t-3xl bg-[#FDFBF7] p-5 shadow-xl sm:rounded-3xl"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-stone-800">
@@ -76,6 +111,43 @@ function AccountModal({ onClose }) {
             <X size={20} />
           </button>
         </div>
+
+        {isParent && (
+          <>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-stone-700">
+                  <LayoutGrid size={15} className="text-[#3D8B5A]" />
+                  홈 화면 표시
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetToDefault()
+                    showToast('홈 표시를 기본값으로 되돌렸어요.')
+                  }}
+                  className="min-h-9 rounded-lg px-2 text-[11px] font-medium text-[#3D8B5A] hover:bg-[#E6F4EA]"
+                >
+                  기본값
+                </button>
+              </div>
+              <p className="text-[11px] leading-relaxed text-stone-400">
+                이 기기에만 저장돼요. 끄면 홈에서 해당 블록이 숨겨져요.
+              </p>
+              {HOME_VISIBILITY_OPTIONS.map((option) => (
+                <ToggleRow
+                  key={option.key}
+                  label={option.label}
+                  description={option.description}
+                  checked={visibility[option.key]}
+                  onChange={(enabled) => setVisible(option.key, enabled)}
+                />
+              ))}
+            </div>
+
+            <div className="my-4 h-px bg-[#E8E2D9]" />
+          </>
+        )}
 
         {/* 비밀번호 변경 */}
         <form onSubmit={handleChangePassword} className="space-y-2.5">

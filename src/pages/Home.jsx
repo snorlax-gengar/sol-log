@@ -9,6 +9,7 @@ import PatternCharts from '@/components/home/PatternCharts'
 import { useCareLogsContext } from '@/context/CareLogsContext'
 import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
 import { useFeedingAlarmContext } from '@/context/FeedingAlarmContext'
+import { useHomeVisibility } from '@/context/HomeVisibilityContext'
 import {
   formatMinutesDuration,
   getAverageDailyFeedingMl,
@@ -20,11 +21,13 @@ import {
   getTodaySummary,
   getWeightTrend,
 } from '@/utils/dashboardStats'
+import { hasAnyHomeSectionVisible } from '@/utils/homeVisibility'
 
 function Home() {
   const { logs, isLoading, error } = useCareLogsContext()
   const { logs: medicalLogs } = useMedicalLogsContext()
   const alarm = useFeedingAlarmContext()
+  const { visibility } = useHomeVisibility()
 
   const summary = getTodaySummary(logs)
   const lastFeedingAt = getLastFeedingAt(logs)
@@ -36,6 +39,7 @@ function Home() {
   const dailyTotals = getDailyFeedingTotals(logs)
   const heatmap = getFeedingHeatmap(logs)
   const weightTrend = getWeightTrend(medicalLogs)
+  const anyVisible = hasAnyHomeSectionVisible(visibility)
 
   return (
     <section className="flex flex-col gap-4">
@@ -56,15 +60,23 @@ function Home() {
         <div className="rounded-2xl bg-[#E6F4EA] px-4 py-5 text-sm text-stone-600">
           대시보드를 불러오는 중…
         </div>
+      ) : !anyVisible ? (
+        <div className="rounded-2xl bg-[#E6F4EA] px-4 py-5 text-sm text-stone-600">
+          표시할 홈 항목이 없어요. 상단 계정 설정에서 다시 켤 수 있어요.
+        </div>
       ) : (
         <>
-          <FeedingTimer lastFeedingAt={lastFeedingAt} />
-          <NextFeedingCard alarm={alarm} />
-          <SummaryCards
-            summary={summary}
-            averageIntervalLabel={averageIntervalLabel}
-            averageDailyFeedingMl={averageDailyFeedingMl}
-          />
+          {visibility.feedingTimer && (
+            <FeedingTimer lastFeedingAt={lastFeedingAt} />
+          )}
+          {visibility.nextFeeding && <NextFeedingCard alarm={alarm} />}
+          {visibility.summaryCards && (
+            <SummaryCards
+              summary={summary}
+              averageIntervalLabel={averageIntervalLabel}
+              averageDailyFeedingMl={averageDailyFeedingMl}
+            />
+          )}
           {/*
             오늘 수유 시간표(파이 차트) — 반응이 별로라 우선 비활성화.
             나중에 다른 형태로 변형해 쓰고 싶으면 아래 주석을 풀고
@@ -75,6 +87,9 @@ function Home() {
             weightTrend={weightTrend}
             dailyTotals={dailyTotals}
             heatmap={heatmap}
+            showDailyTotals={visibility.dailyTotals}
+            showHeatmap={visibility.heatmap}
+            showWeightTrend={visibility.weightTrend}
           />
         </>
       )}
