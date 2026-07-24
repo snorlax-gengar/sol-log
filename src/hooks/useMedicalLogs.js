@@ -114,6 +114,7 @@ export function useMedicalLogs({ enableRealtime = false } = {}) {
           baby_height_cm: payload.babyHeightCm,
           is_upcoming: payload.isUpcoming,
           medicine_checked: payload.medicineChecked,
+          medicine_required: Boolean(payload.medicineRequired),
         })
         .select()
         .single()

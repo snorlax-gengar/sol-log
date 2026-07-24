@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import MedicalForm from '@/components/medical/MedicalForm'
+import { Plus } from 'lucide-react'
+import MedicalFormModal from '@/components/medical/MedicalFormModal'
 import MedicalCard from '@/components/medical/MedicalCard'
 import ChipButton from '@/components/quickLog/ChipButton'
 import { useMedicalLogsContext } from '@/context/MedicalLogsContext'
@@ -9,8 +10,8 @@ const AUTO_PROMOTE_INTERVAL_MS = 60_000
 
 function Medical() {
   const [tab, setTab] = useState('records')
+  const [formOpen, setFormOpen] = useState(false)
   const [editingLog, setEditingLog] = useState(null)
-  const formRef = useRef(null)
   const promotingRef = useRef(false)
   const { showToast } = useToast()
   const {
@@ -84,11 +85,16 @@ function Medical() {
     }
   }, [logs, isLoading, promoteDueAppointments, showToast])
 
+  const closeForm = () => {
+    setFormOpen(false)
+    setEditingLog(null)
+  }
+
   const handleDelete = async (log) => {
     const confirmed = window.confirm('이 기록을 삭제할까요?')
     if (!confirmed) return
     await deleteMedicalLog(log.id)
-    if (editingLog?.id === log.id) setEditingLog(null)
+    if (editingLog?.id === log.id) closeForm()
   }
 
   const handleToggleMedicine = async (log) => {
@@ -115,8 +121,7 @@ function Medical() {
 
   const handleEdit = (log) => {
     setEditingLog(log)
-    // 폼은 화면 상단에 있으므로, 수정 시작 시 폼이 보이도록 스크롤
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setFormOpen(true)
   }
 
   const handleSaveEdit = async (patch) => {
@@ -124,57 +129,59 @@ function Medical() {
     return result
   }
 
+  const addLabel =
+    tab === 'upcoming' ? '예약/접종 추가' : '진료 기록 추가'
+
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-stone-800">메디컬</h1>
-        <p className="mt-1 text-sm text-stone-500">
-          진료 기록과 예약 일정을 관리하고 성장 지표를 남겨요.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-stone-800">메디컬</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            진료 기록과 예약 일정을 관리하고 성장 지표를 남겨요.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingLog(null)
+            setFormOpen(true)
+          }}
+          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#3D8B5A] px-3 text-xs font-semibold text-white shadow-sm"
+        >
+          <Plus size={14} strokeWidth={2.5} />
+          추가
+        </button>
       </div>
 
-      {!editingLog && (
-        <div className="grid grid-cols-2 gap-2">
-          <ChipButton
-            selected={tab === 'records'}
-            onClick={() => setTab('records')}
-            className="w-full"
-          >
-            진료 기록
-          </ChipButton>
-          <ChipButton
-            selected={tab === 'upcoming'}
-            onClick={() => setTab('upcoming')}
-            className="w-full"
-          >
-            예약/접종
-            {dueUpcomingCount > 0 && (
-              <span className="ml-1 rounded-md bg-[#B4552D] px-1.5 py-0.5 text-[10px] font-bold text-white">
-                {dueUpcomingCount}
-              </span>
-            )}
-          </ChipButton>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-2">
+        <ChipButton
+          selected={tab === 'records'}
+          onClick={() => setTab('records')}
+          className="w-full"
+        >
+          진료 기록
+        </ChipButton>
+        <ChipButton
+          selected={tab === 'upcoming'}
+          onClick={() => setTab('upcoming')}
+          className="w-full"
+        >
+          예약/접종
+          {dueUpcomingCount > 0 && (
+            <span className="ml-1 rounded-md bg-[#B4552D] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {dueUpcomingCount}
+            </span>
+          )}
+        </ChipButton>
+      </div>
 
-      {tab === 'upcoming' && dueUpcomingCount > 0 && !editingLog && (
+      {tab === 'upcoming' && dueUpcomingCount > 0 && (
         <p className="rounded-xl bg-[#F7E8D8] px-3 py-2.5 text-xs leading-relaxed text-[#8A4A2A]">
           방문 시각이 지난 예약 {dueUpcomingCount}건은 자동으로 진료 기록으로
           옮겨져요. 카드의 버튼으로 직접 옮길 수도 있어요.
         </p>
       )}
-
-      <div ref={formRef}>
-        <MedicalForm
-          key={editingLog?.id ?? tab}
-          isUpcoming={tab === 'upcoming'}
-          isSaving={isSaving}
-          onSubmit={insertMedicalLog}
-          editingLog={editingLog}
-          onSave={handleSaveEdit}
-          onCancelEdit={() => setEditingLog(null)}
-        />
-      </div>
 
       {error && (
         <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
@@ -187,11 +194,24 @@ function Medical() {
           불러오는 중…
         </div>
       ) : filteredLogs.length === 0 ? (
-        <div className="rounded-2xl bg-[#E6F4EA] px-4 py-5 text-sm text-stone-600">
-          {tab === 'upcoming'
-            ? '등록된 예약/접종이 없습니다.'
-            : '등록된 진료 기록이 없습니다.'}
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingLog(null)
+            setFormOpen(true)
+          }}
+          className="rounded-2xl bg-[#E6F4EA] px-4 py-8 text-center transition-colors hover:bg-[#d8ecdf]"
+        >
+          <p className="text-sm text-stone-600">
+            {tab === 'upcoming'
+              ? '등록된 예약/접종이 없습니다.'
+              : '등록된 진료 기록이 없습니다.'}
+          </p>
+          <p className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[#2F6B45]">
+            <Plus size={15} />
+            {addLabel}
+          </p>
+        </button>
       ) : (
         <ul className="flex flex-col gap-3">
           {filteredLogs.map((log) => (
@@ -207,6 +227,17 @@ function Medical() {
             </li>
           ))}
         </ul>
+      )}
+
+      {formOpen && (
+        <MedicalFormModal
+          isUpcoming={editingLog ? Boolean(editingLog.is_upcoming) : tab === 'upcoming'}
+          isSaving={isSaving}
+          editingLog={editingLog}
+          onSubmit={insertMedicalLog}
+          onSave={handleSaveEdit}
+          onClose={closeForm}
+        />
       )}
     </section>
   )

@@ -25,6 +25,10 @@ function createInitialForm(isUpcoming, editingLog) {
           ? String(editingLog.baby_height_cm)
           : '',
       isUpcoming: Boolean(editingLog.is_upcoming),
+      medicineRequired:
+        editingLog.medicine_required != null
+          ? Boolean(editingLog.medicine_required)
+          : Boolean(editingLog.medicine_checked),
       medicineChecked: Boolean(editingLog.medicine_checked),
     }
   }
@@ -40,6 +44,7 @@ function createInitialForm(isUpcoming, editingLog) {
     babyWeightKg: '',
     babyHeightCm: '',
     isUpcoming,
+    medicineRequired: false,
     medicineChecked: false,
   }
 }
@@ -51,6 +56,8 @@ function MedicalForm({
   editingLog = null,
   onSave,
   onCancelEdit,
+  onSuccess,
+  variant = 'card',
 }) {
   const [form, setForm] = useState(() =>
     createInitialForm(isUpcoming, editingLog),
@@ -107,14 +114,20 @@ function MedicalForm({
           : form.diagnosis.trim() || null,
         baby_weight_kg: weight,
         baby_height_cm: height,
+        medicine_required: formIsUpcoming
+          ? Boolean(editingLog.medicine_required)
+          : form.medicineRequired,
         medicine_checked: formIsUpcoming
           ? editingLog.medicine_checked
-          : form.medicineChecked,
+          : form.medicineRequired
+            ? form.medicineChecked
+            : false,
       }
 
       const result = await onSave(patch)
       if (!result?.error) {
         onCancelEdit?.()
+        onSuccess?.()
       } else {
         setError(result.error)
       }
@@ -132,30 +145,40 @@ function MedicalForm({
       babyWeightKg: weight,
       babyHeightCm: height,
       isUpcoming,
-      medicineChecked: form.medicineChecked,
+      medicineRequired: form.medicineRequired,
+      medicineChecked: form.medicineRequired ? form.medicineChecked : false,
     })
 
     if (!result?.error) {
       setForm(createInitialForm(isUpcoming))
+      onSuccess?.()
     } else {
       setError(result.error)
     }
   }
 
+  const isPlain = variant === 'plain'
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-[#E8E2D9]"
+      className={
+        isPlain
+          ? 'space-y-3'
+          : 'space-y-3 rounded-2xl bg-white p-4 ring-1 ring-[#E8E2D9]'
+      }
     >
-      <h2 className="text-sm font-semibold text-stone-800">
-        {editingLog
-          ? formIsUpcoming
-            ? '예약/접종 수정'
-            : '진료 기록 수정'
-          : isUpcoming
-            ? '예약/접종 추가'
-            : '진료 기록 추가'}
-      </h2>
+      {!isPlain && (
+        <h2 className="text-sm font-semibold text-stone-800">
+          {editingLog
+            ? formIsUpcoming
+              ? '예약/접종 수정'
+              : '진료 기록 수정'
+            : isUpcoming
+              ? '예약/접종 추가'
+              : '진료 기록 추가'}
+        </h2>
+      )}
 
       <TimePicker
         title={formIsUpcoming ? '언제 예약인가요?' : '언제 다녀왔나요?'}
@@ -296,15 +319,33 @@ function MedicalForm({
       </div>
 
       {!formIsUpcoming && (
-        <ChipButton
-          selected={form.medicineChecked}
-          onClick={() =>
-            updateForm({ medicineChecked: !form.medicineChecked })
-          }
-          className="w-full"
-        >
-          투약 완료
-        </ChipButton>
+        <div className="space-y-2">
+          <ChipButton
+            selected={form.medicineRequired}
+            onClick={() =>
+              updateForm({
+                medicineRequired: !form.medicineRequired,
+                medicineChecked: !form.medicineRequired
+                  ? false
+                  : form.medicineChecked,
+              })
+            }
+            className="w-full"
+          >
+            투약 있음
+          </ChipButton>
+          {form.medicineRequired && (
+            <ChipButton
+              selected={form.medicineChecked}
+              onClick={() =>
+                updateForm({ medicineChecked: !form.medicineChecked })
+              }
+              className="w-full"
+            >
+              {form.medicineChecked ? '투약 완료됨' : '투약 완료로 표시'}
+            </ChipButton>
+          )}
+        </div>
       )}
 
       {error && (
@@ -313,8 +354,8 @@ function MedicalForm({
         </p>
       )}
 
-      <div className="flex gap-2">
-        {editingLog && (
+      <div className="flex gap-2 pb-1">
+        {onCancelEdit && (
           <button
             type="button"
             onClick={onCancelEdit}

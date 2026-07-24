@@ -80,7 +80,8 @@ CREATE TABLE medical_logs (
     baby_weight_kg NUMERIC(4,2), -- 몸무게 (성장 지표용)
     baby_height_cm NUMERIC(5,1), -- 키 (성장 지표용)
     is_upcoming BOOLEAN DEFAULT false, -- 예약 일정 여부 (D-Day 표시용)
-    medicine_checked BOOLEAN DEFAULT false, -- 투약 완료 여부
+    medicine_required BOOLEAN DEFAULT false, -- 투약 추적 대상 여부 (추가 시 '투약 있음'으로 켬)
+    medicine_checked BOOLEAN DEFAULT false, -- 투약 완료 여부 (medicine_required=true일 때만 UI 표시)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```

@@ -128,7 +128,9 @@ function MedicalCard({
         </div>
       )}
 
-      {!log.is_upcoming && (
+      {!log.is_upcoming &&
+        (log.medicine_required ||
+          (log.medicine_required == null && log.medicine_checked)) && (
         <div className="mt-3">
           <ChipButton
             selected={log.medicine_checked}
